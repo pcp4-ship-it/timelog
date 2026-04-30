@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TimeLog</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f4f2ee;--surface:#fff;--surface2:#eeece8;--border:#e0dcd4;
+  --ink:#1c1a16;--ink2:#7a7268;--ink3:#b0a898;
+  --accent:#c84b2f;--blue:#2f6bc8;--green:#2a9d63;--amber:#c8832f;
+  --sh:0 1px 2px rgba(0,0,0,.06),0 3px 12px rgba(0,0,0,.05);
+  --sh-lg:0 8px 40px rgba(0,0,0,.13);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--ink);font-family:'DM Sans',sans-serif;min-height:100vh;}
+
+/* SETUP BANNER */
+#setup-banner{background:linear-gradient(135deg,#1c1a16,#2a2620);color:#fff;padding:14px 40px;display:flex;align-items:center;gap:14px;font-size:.84rem;}
+#setup-banner.hidden{display:none;}
+.setup-dot{width:8px;height:8px;border-radius:50%;background:#f7c948;flex-shrink:0;animation:blink 1.4s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.setup-link{color:#f7c948;font-weight:600;cursor:pointer;text-decoration:underline;}
+.setup-close{margin-left:auto;background:rgba(255,255,255,.1);border:none;color:#fff;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:.8rem;}
+
+/* LOCK */
+#lock-screen{position:fixed;inset:0;background:var(--ink);display:none;align-items:center;justify-content:center;z-index:9999;}
+.lock-box{background:var(--surface);border-radius:22px;padding:52px 46px;width:380px;box-shadow:var(--sh-lg);text-align:center;}
+.lock-icon{font-size:2rem;margin-bottom:18px;display:block;}
+.lock-title{font-family:'Syne',sans-serif;font-size:1.55rem;font-weight:800;letter-spacing:-.03em;margin-bottom:6px;}
+.lock-sub{font-size:.84rem;color:var(--ink2);margin-bottom:26px;}
+.lock-inp{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:11px;color:var(--ink);font-family:'DM Mono',monospace;font-size:1.1rem;letter-spacing:.15em;padding:13px;text-align:center;outline:none;margin-bottom:13px;transition:border-color .2s,box-shadow .2s;}
+.lock-inp:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(200,75,47,.12);}
+.lock-inp.shake{animation:shake .4s ease;border-color:var(--accent);}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+.lock-btn{width:100%;background:var(--accent);color:#fff;border:none;border-radius:11px;font-family:'Syne',sans-serif;font-weight:700;font-size:.95rem;padding:13px;cursor:pointer;transition:opacity .2s,transform .15s;}
+.lock-btn:hover{opacity:.88;transform:translateY(-1px);}
+
+/* NAV */
+nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 40px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100;box-shadow:var(--sh);}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.25rem;letter-spacing:-.04em;display:flex;align-items:center;gap:8px;}
+.logo-mark{width:30px;height:30px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.9rem;font-weight:800;}
+.sync-pill{font-size:.72rem;font-weight:600;padding:3px 10px;border-radius:99px;display:flex;align-items:center;gap:5px;cursor:default;}
+.sync-pill.ok{background:rgba(42,157,99,.12);color:var(--green);}
+.sync-pill.err{background:rgba(200,75,47,.12);color:var(--accent);}
+.sync-pill.loading{background:rgba(200,131,47,.12);color:var(--amber);}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:currentColor;}
+.nav-tabs{display:flex;gap:2px;}
+.tab-btn{padding:7px 20px;border-radius:8px;border:none;background:transparent;color:var(--ink2);font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:500;cursor:pointer;transition:all .18s;}
+.tab-btn.active{background:var(--ink);color:#fff;}
+.tab-btn:hover:not(.active){background:var(--surface2);color:var(--ink);}
+
+/* MODALS */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(28,26,22,.65);z-index:600;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border-radius:20px;padding:36px;width:680px;max-width:96vw;max-height:90vh;overflow-y:auto;box-shadow:var(--sh-lg);animation:fadeUp .25s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.modal-title{font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:800;letter-spacing:-.03em;margin-bottom:4px;}
+.modal-sub{font-size:.83rem;color:var(--ink2);margin-bottom:24px;}
+.modal-footer{margin-top:22px;display:flex;justify-content:flex-end;gap:10px;}
+
+/* SETUP STEPS */
+.step{display:flex;gap:16px;margin-bottom:16px;padding:18px 20px;background:var(--surface2);border-radius:12px;border:1px solid var(--border);}
+.step-num{width:28px;height:28px;border-radius:50%;background:var(--ink);color:#fff;font-family:'Syne',sans-serif;font-weight:800;font-size:.85rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;}
+.step-body h4{font-family:'Syne',sans-serif;font-size:.9rem;font-weight:700;margin-bottom:6px;}
+.step-body p{font-size:.82rem;color:var(--ink2);line-height:1.6;margin-bottom:8px;}
+.step-body a{color:var(--blue);font-weight:600;}
+.inp-cfg{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:9px;color:var(--ink);font-family:'DM Mono',monospace;font-size:.82rem;padding:9px 12px;outline:none;transition:border-color .2s;margin-top:6px;}
+.inp-cfg:focus{border-color:var(--blue);}
+.inp-cfg::placeholder{color:var(--ink3);}
+
+/* PAGES */
+.page{display:none;padding:36px 40px;max-width:980px;margin:0 auto;}
+.page.active{display:block;animation:fadeUp .3s ease;}
+.page-title{font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:800;letter-spacing:-.04em;margin-bottom:4px;}
+.page-sub{color:var(--ink2);font-size:.88rem;margin-bottom:28px;}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:26px 28px;margin-bottom:18px;box-shadow:var(--sh);}
+.card-title{font-size:.7rem;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.09em;margin-bottom:18px;display:flex;align-items:center;gap:8px;}
+.card-title::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* FORM */
+.form-row{display:grid;gap:14px;margin-bottom:14px;}
+.form-row.c2{grid-template-columns:1fr 1fr;}
+.form-group{display:flex;flex-direction:column;gap:6px;}
+label{font-size:.74rem;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.07em;}
+input[type=text],input[type=date],input[type=time],input[type=password],select{background:var(--bg);border:1.5px solid var(--border);border-radius:9px;color:var(--ink);font-family:'DM Sans',sans-serif;font-size:.9rem;padding:10px 13px;transition:border-color .2s,box-shadow .2s;outline:none;width:100%;}
+input:focus,select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(47,107,200,.1);}
+input[type=time]{font-family:'DM Mono',monospace;letter-spacing:.04em;}
+
+/* CHIPS */
+.chips-wrap{display:flex;flex-wrap:wrap;gap:7px;padding:8px;background:var(--bg);border:1.5px solid var(--border);border-radius:9px;min-height:46px;cursor:text;transition:border-color .2s,box-shadow .2s;}
+.chips-wrap:focus-within{border-color:var(--blue);box-shadow:0 0 0 3px rgba(47,107,200,.1);}
+.chip{display:flex;align-items:center;gap:5px;background:var(--ink);color:#fff;border-radius:6px;padding:4px 10px;font-size:.8rem;font-weight:500;}
+.chip button{background:none;border:none;color:rgba(255,255,255,.6);cursor:pointer;font-size:.9rem;padding:0 0 0 2px;line-height:1;transition:color .15s;}
+.chip button:hover{color:#fff;}
+.chip-inp{border:none;background:transparent;outline:none;font-family:'DM Sans',sans-serif;font-size:.88rem;color:var(--ink);min-width:120px;flex:1;padding:2px 4px;}
+.chip-inp::placeholder{color:var(--ink3);}
+
+/* AUTOCOMPLETE */
+.ac-wrap{position:relative;}
+.ac-list{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface);border:1.5px solid var(--border);border-radius:9px;box-shadow:var(--sh-lg);z-index:300;max-height:180px;overflow-y:auto;display:none;}
+.ac-list.open{display:block;}
+.ac-item{padding:9px 13px;font-size:.88rem;cursor:pointer;border-bottom:1px solid var(--border);color:var(--ink);transition:background .12s;}
+.ac-item:last-child{border-bottom:none;}
+.ac-item:hover,.ac-item.hi{background:var(--bg);}
+
+/* ENTRIES */
+.entry-hdr{display:grid;grid-template-columns:86px 86px 1fr 140px 36px;gap:10px;padding:0 14px;margin-bottom:6px;}
+.entry-hdr span{font-size:.68rem;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.08em;}
+.entry-row{display:grid;grid-template-columns:86px 86px 1fr 140px 36px;gap:10px;align-items:start;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:8px;transition:border-color .18s;}
+.entry-row:hover{border-color:var(--blue);}
+.entry-row input{padding:8px 10px;font-size:.85rem;}
+.btn-rm{background:transparent;border:1.5px solid var(--border);border-radius:7px;color:var(--ink2);width:36px;height:36px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.9rem;transition:all .18s;flex-shrink:0;}
+.btn-rm:hover{background:rgba(200,75,47,.1);border-color:var(--accent);color:var(--accent);}
+.btn-add{background:transparent;border:1.5px dashed var(--border);border-radius:9px;color:var(--ink2);padding:10px;width:100%;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.85rem;transition:all .18s;display:flex;align-items:center;justify-content:center;gap:6px;margin-top:2px;}
+.btn-add:hover{border-color:var(--blue);color:var(--blue);background:rgba(47,107,200,.04);}
+.btn-submit{background:var(--ink);border:none;border-radius:10px;color:#fff;font-family:'Syne',sans-serif;font-size:.95rem;font-weight:700;padding:13px;cursor:pointer;width:100%;transition:opacity .18s,transform .15s;box-shadow:var(--sh);}
+.btn-submit:hover{opacity:.85;transform:translateY(-1px);}
+.btn-submit:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+
+/* REPORT */
+.rpt-ctrl{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:22px;align-items:center;}
+.rpt-ctrl input,.rpt-ctrl select{background:var(--surface);flex:1;min-width:130px;max-width:200px;}
+.btn-act{background:var(--surface);border:1.5px solid var(--border);border-radius:9px;color:var(--ink);padding:9px 14px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:500;transition:all .18s;white-space:nowrap;display:flex;align-items:center;gap:6px;}
+.btn-act:hover{border-color:var(--ink);}
+.btn-act.danger:hover{border-color:var(--accent);color:var(--accent);}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px;}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 20px;box-shadow:var(--sh);position:relative;overflow:hidden;}
+.stat::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;}
+.stat.c1::after{background:var(--accent);}
+.stat.c2::after{background:var(--blue);}
+.stat.c3::after{background:var(--green);}
+.stat-lbl{font-size:.71rem;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;}
+.stat-val{font-family:'Syne',sans-serif;font-size:1.75rem;font-weight:800;letter-spacing:-.04em;line-height:1;margin-bottom:4px;}
+.stat.c1 .stat-val{color:var(--accent);}
+.stat.c2 .stat-val{color:var(--blue);}
+.stat.c3 .stat-val{color:var(--green);}
+.stat-sub{font-size:.78rem;color:var(--ink2);}
+
+/* CHARTS */
+.charts{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px 22px;box-shadow:var(--sh);}
+.chart-card h4{font-size:.7rem;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.09em;margin-bottom:16px;}
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.bar-lbl{font-size:.78rem;color:var(--ink);min-width:90px;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.bar-track{flex:1;height:7px;background:var(--bg);border-radius:99px;overflow:hidden;border:1px solid var(--border);}
+.bar-fill{height:100%;border-radius:99px;transition:width .6s cubic-bezier(.34,1.56,.64,1);}
+.bar-time{font-family:'DM Mono',monospace;font-size:.72rem;color:var(--ink2);min-width:40px;text-align:right;}
+
+/* TABLE */
+.tbl-wrap{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:var(--sh);margin-bottom:100px;}
+.tbl-head{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);}
+.tbl-head h4{font-size:.7rem;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.09em;}
+.sel-lbl{font-size:.78rem;color:var(--blue);font-weight:600;display:none;}
+.sel-lbl.on{display:block;}
+table{width:100%;border-collapse:collapse;}
+thead th{background:var(--surface2);padding:10px 14px;text-align:left;font-size:.68rem;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.08em;border-bottom:1px solid var(--border);}
+thead th:first-child{width:40px;text-align:center;}
+tbody tr{border-bottom:1px solid var(--border);transition:background .12s;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:var(--surface2);}
+tbody tr.sel{background:rgba(47,107,200,.07)!important;outline:2px solid rgba(47,107,200,.2);outline-offset:-1px;}
+tbody td{padding:10px 14px;font-size:.84rem;}
+tbody td:first-child{text-align:center;}
+.mono{font-family:'DM Mono',monospace;font-size:.78rem;color:var(--ink2);}
+.badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:99px;font-size:.7rem;font-weight:600;}
+.badge-int{background:rgba(42,157,99,.12);color:var(--green);}
+.badge-cli{background:rgba(47,107,200,.12);color:var(--blue);}
+.chips-cell{display:flex;flex-wrap:wrap;gap:4px;}
+.ctag{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:1px 7px;font-size:.72rem;color:var(--ink2);}
+input[type=checkbox]{width:15px;height:15px;accent-color:var(--blue);cursor:pointer;}
+
+/* FAB */
+#fab{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;border-radius:14px;padding:11px 18px;display:flex;align-items:center;gap:10px;box-shadow:var(--sh-lg);opacity:0;pointer-events:none;transition:all .25s cubic-bezier(.34,1.56,.64,1);z-index:400;white-space:nowrap;}
+#fab.on{opacity:1;pointer-events:all;transform:translateX(-50%) translateY(0);}
+.fab-n{font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;padding-right:10px;border-right:1px solid rgba(255,255,255,.18);}
+.fab-btn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#fff;padding:6px 13px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:500;transition:background .15s;display:flex;align-items:center;gap:5px;}
+.fab-btn:hover{background:rgba(255,255,255,.2);}
+.fab-btn.red{background:rgba(200,75,47,.3);border-color:rgba(200,75,47,.5);}
+.fab-btn.red:hover{background:rgba(200,75,47,.5);}
+.fab-x{background:transparent;border:none;color:rgba(255,255,255,.45);cursor:pointer;font-size:1rem;padding:3px 6px;transition:color .15s;}
+.fab-x:hover{color:#fff;}
+
+/* EDIT RECORDS MODAL */
+.rec-block{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:14px;}
+.rec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.rec-who{font-size:.82rem;font-weight:600;}
+.rec-date{font-family:'DM Mono',monospace;font-size:.75rem;color:var(--ink2);}
+.rec-egrid{display:grid;grid-template-columns:80px 80px 1fr 130px;gap:8px;margin-bottom:8px;}
+.rec-egrid input{font-size:.82rem;padding:7px 9px;}
+.rec-egrid label{font-size:.64rem;}
+
+/* RENAME */
+.ed-sec{margin-bottom:22px;}
+.ed-sec h5{font-family:'Syne',sans-serif;font-size:.78rem;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+.ed-row{display:grid;grid-template-columns:1fr 1fr 80px;gap:10px;align-items:center;margin-bottom:4px;}
+.ed-row input{font-size:.85rem;padding:9px 11px;}
+.btn-apply{background:var(--blue);color:#fff;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.8rem;font-weight:600;padding:9px 10px;cursor:pointer;transition:opacity .18s;}
+.btn-apply:hover{opacity:.85;}
+.ed-cnt{font-size:.72rem;color:var(--ink2);margin-bottom:12px;}
+.no-data{color:var(--ink2);font-size:.84rem;font-style:italic;padding:8px 0;}
+
+/* BUTTONS */
+.btn-close{background:var(--surface2);border:1.5px solid var(--border);border-radius:9px;color:var(--ink);padding:9px 20px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:500;transition:all .15s;}
+.btn-close:hover{border-color:var(--ink);}
+.btn-save{background:var(--blue);border:none;border-radius:9px;color:#fff;padding:9px 22px;cursor:pointer;font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;transition:opacity .15s;}
+.btn-save:hover{opacity:.85;}
+
+/* TOAST */
+.toast{position:fixed;bottom:28px;right:28px;color:#fff;font-size:.84rem;font-weight:500;padding:11px 18px;border-radius:10px;z-index:1100;opacity:0;transform:translateY(10px);transition:all .25s;pointer-events:none;box-shadow:var(--sh-lg);max-width:320px;}
+.toast.on{opacity:1;transform:translateY(0);}
+.empty{text-align:center;padding:48px 20px;color:var(--ink2);}
+.empty .ico{font-size:2.2rem;margin-bottom:10px;}
+
+@media(max-width:700px){
+  .page{padding:20px 14px}nav{padding:0 14px}#setup-banner{padding:12px 14px;flex-wrap:wrap}
+  .stats-grid{grid-template-columns:1fr}.charts{grid-template-columns:1fr}
+  .form-row.c2{grid-template-columns:1fr}
+  .entry-hdr,.entry-row{grid-template-columns:76px 76px 1fr 36px}
+  .entry-row .hcli,.entry-hdr .lhcli{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- SETUP BANNER -->
+<div id="setup-banner">
+  <div class="setup-dot"></div>
+  <span>⚙️ JSONBin não configurado — dados ficam apenas neste navegador.</span>
+  <span class="setup-link" onclick="openSetup()">Configurar agora (2 min)</span>
+  <button class="setup-close" onclick="document.getElementById('setup-banner').classList.add('hidden')">✕</button>
+</div>
+
+<!-- LOCK -->
+<div id="lock-screen">
+  <div class="lock-box">
+    <span class="lock-icon">🔒</span>
+    <div class="lock-title">Acesso Restrito</div>
+    <div class="lock-sub">Área exclusiva para gestores</div>
+    <input type="password" class="lock-inp" id="lock-inp" placeholder="••••••••" maxlength="32" onkeydown="if(event.key==='Enter')unlock()">
+    <button class="lock-btn" onclick="unlock()">Entrar</button>
+  </div>
+</div>
+
+<!-- SETUP MODAL -->
+<div class="modal-overlay" id="setup-modal">
+  <div class="modal">
+    <div class="modal-title">⚙️ Configurar JSONBin.io</div>
+    <div class="modal-sub">Faça isso uma única vez. Todos que abrirem o arquivo verão os mesmos dados.</div>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h4>Criar conta gratuita</h4>
+        <p>Acesse <a href="https://jsonbin.io" target="_blank">jsonbin.io</a> e crie uma conta gratuita. Depois vá em <strong>Account → API Keys</strong> e copie sua <strong>Master Key</strong>.</p>
+        <input class="inp-cfg" id="cfg-apikey" placeholder="Cole sua Master Key aqui  (ex: $2a$10$...)">
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h4>Criar o Bin (banco de dados)</h4>
+        <p>Clique no botão abaixo para criar automaticamente o banco de dados online. Você precisa ter preenchido a Master Key acima primeiro.</p>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button onclick="createBin()" style="background:var(--blue);border:none;border-radius:8px;color:#fff;padding:9px 18px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.84rem;font-weight:600;transition:opacity .18s" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">🚀 Criar banco de dados</button>
+        </div>
+        <p id="bin-result" style="font-size:.8rem;margin-top:8px;"></p>
+        <p style="margin-top:10px;">Ou se já tiver um Bin ID:</p>
+        <input class="inp-cfg" id="cfg-binid" placeholder="Bin ID existente (ex: 64a1b2c3d4e5f6...)">
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h4>Definir senha do relatório</h4>
+        <p>Senha que você e seu gestor usarão para acessar o painel gerencial.</p>
+        <input type="password" class="inp-cfg" id="cfg-pass" placeholder="Mínimo 4 caracteres">
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <button onclick="saveSetup()" style="background:var(--green);border:none;border-radius:8px;color:#fff;padding:9px 18px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.84rem;font-weight:600;flex:1;transition:opacity .18s" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">✓ Salvar configuração</button>
+        </div>
+        <p id="save-result" style="font-size:.8rem;margin-top:8px;"></p>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-close" onclick="closeSetup()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- RENAME EDITOR MODAL -->
+<div class="modal-overlay" id="editor-modal">
+  <div class="modal">
+    <div class="modal-title">✏️ Corrigir Dados</div>
+    <div class="modal-sub">Substitua nomes incorretos em todos os registros de uma vez.</div>
+    <div id="editor-content"></div>
+    <div class="modal-footer"><button class="btn-close" onclick="closeEditor()">Fechar</button></div>
+  </div>
+</div>
+
+<!-- EDIT SELECTED MODAL -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <div class="modal-title">✏️ Editar Registros Selecionados</div>
+    <div class="modal-sub" id="edit-modal-sub"></div>
+    <div id="edit-modal-content"></div>
+    <div class="modal-footer">
+      <button class="btn-close" onclick="closeEditModal()">Cancelar</button>
+      <button class="btn-save" onclick="saveEditedRecords()">Salvar alterações</button>
+    </div>
+  </div>
+</div>
+
+<!-- FAB -->
+<div id="fab">
+  <span class="fab-n" id="fab-n">0 selecionados</span>
+  <button class="fab-btn" onclick="editSelected()">✏️ Editar</button>
+  <div style="width:1px;height:20px;background:rgba(255,255,255,.15)"></div>
+  <button class="fab-btn red" onclick="deleteSelected()">🗑 Excluir</button>
+  <button class="fab-x" onclick="clearSel()">✕</button>
+</div>
+
+<!-- NAV -->
+<nav>
+  <div class="logo"><div class="logo-mark">T</div>TimeLog</div>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <div class="sync-pill loading" id="sync-pill" onclick="if(getCfg().binId)renderReport()" title="Clique para recarregar">
+      <div class="sync-dot"></div><span id="sync-txt">Verificando...</span>
+    </div>
+    <div class="nav-tabs">
+      <button class="tab-btn active" id="tab-form" onclick="showPage('form',this)">📋 Registro</button>
+      <button class="tab-btn" id="tab-report" onclick="checkReport(this)">📊 Relatório</button>
+    </div>
+  </div>
+</nav>
+
+<!-- FORM PAGE -->
+<div class="page active" id="page-form">
+  <div class="page-title">Registro do Dia</div>
+  <div class="page-sub">Preencha suas atividades — simples e rápido.</div>
+  <div class="card">
+    <div class="card-title">Identificação</div>
+    <div class="form-row c2">
+      <div class="form-group">
+        <label>Colaborador(es)</label>
+        <div class="ac-wrap">
+          <div class="chips-wrap" id="chips-wrap" onclick="document.getElementById('chip-inp').focus()">
+            <input type="text" id="chip-inp" class="chip-inp" placeholder="Nome + Enter para adicionar...">
+          </div>
+          <div class="ac-list" id="chip-ac"></div>
+        </div>
+        <span style="font-size:.72rem;color:var(--ink3)">Para atividade em dupla, adicione dois nomes</span>
+      </div>
+      <div class="form-group">
+        <label>Data</label>
+        <input type="date" id="func-date">
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Atividades realizadas</div>
+    <div class="entry-hdr">
+      <span>Início</span><span>Fim</span><span>Atividade</span>
+      <span class="lhcli">Cliente / Setor</span><span></span>
+    </div>
+    <div id="entries-container"></div>
+    <button class="btn-add" onclick="addEntry()">＋ Adicionar atividade</button>
+  </div>
+  <button class="btn-submit" id="btn-submit" onclick="saveRecord()">✓ Enviar registro</button>
+</div>
+
+<!-- REPORT PAGE -->
+<div class="page" id="page-report">
+  <div class="page-title">Painel Gerencial</div>
+  <div class="page-sub">Consolidado de horas por cliente e por colaborador.</div>
+  <div class="rpt-ctrl">
+    <input type="date" id="f-from" onchange="renderReport()">
+    <input type="date" id="f-to"   onchange="renderReport()">
+    <select id="f-emp" onchange="renderReport()"><option value="">Todos os colaboradores</option></select>
+    <button class="btn-act" onclick="renderReport()" title="Recarregar dados">🔄 Atualizar</button>
+    <button class="btn-act" onclick="openEditor()">✏️ Corrigir dados</button>
+    <button class="btn-act" onclick="exportCSV()">⬇ Exportar CSV</button>
+    <button class="btn-act" id="btn-import" onclick="importHistoricalData()" style="border-color:var(--green);color:var(--green);display:none">📥 Importar histórico</button>
+    <button class="btn-act danger" onclick="clearAll()">🗑 Limpar tudo</button>
+  </div>
+  <div class="stats-grid">
+    <div class="stat c1"><div class="stat-lbl">Total de horas</div><div class="stat-val" id="s-total">—</div><div class="stat-sub" id="s-recs">—</div></div>
+    <div class="stat c2"><div class="stat-lbl">Horas para clientes</div><div class="stat-val" id="s-cli">—</div><div class="stat-sub" id="s-clip">—</div></div>
+    <div class="stat c3"><div class="stat-lbl">Horas internas</div><div class="stat-val" id="s-int">—</div><div class="stat-sub" id="s-intp">—</div></div>
+  </div>
+  <div class="charts">
+    <div class="chart-card"><h4>Por Cliente / Setor</h4><div id="chart-cli"></div></div>
+    <div class="chart-card"><h4>Por Colaborador</h4><div id="chart-emp"></div></div>
+  </div>
+  <div class="tbl-wrap">
+    <div class="tbl-head">
+      <h4>Registros detalhados</h4>
+      <span class="sel-lbl" id="sel-lbl"></span>
+    </div>
+    <div id="table-container"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════
+// HISTORICAL DATA (imported from CSV)
+// ════════════════════════════════════════
+const HISTORICAL = [{"id": 1700000000000, "employees": ["Denis Almeida"], "name": "Denis Almeida", "date": "2026-04-01", "entries": [{"start": "07:10", "end": "11:40", "activity": "Montagem de Painel", "client": "Romeu Jose"}, {"start": "13:00", "end": "16:30", "activity": "Montagem de Painel", "client": "Romeu Jose"}]}, {"id": 1700000000001, "employees": ["Donizete"], "name": "Donizete", "date": "2026-04-01", "entries": [{"start": "07:20", "end": "11:00", "activity": "Manutenção na Estufa", "client": "CTC"}, {"start": "11:20", "end": "12:10", "activity": "Falta de Energia", "client": "Interno"}, {"start": "13:30", "end": "14:50", "activity": "Acompanhamento de corrente consumo gerador", "client": "Interno"}, {"start": "14:30", "end": "15:30", "activity": "Reunião com Jucenir e Volnei", "client": "Interno"}, {"start": "16:00", "end": "16:45", "activity": "Integração da Klabin", "client": "Klabin"}, {"start": "16:50", "end": "17:20", "activity": "Alinhamento de serviço para o dia seguinte", "client": "CTC"}]}, {"id": 1700000000002, "employees": ["Erik Emanuel"], "name": "Erik Emanuel", "date": "2026-04-01", "entries": [{"start": "07:30", "end": "08:39", "activity": "Manual", "client": "CMZ"}, {"start": "08:40", "end": "10:30", "activity": "Etiquetas", "client": "Interno"}, {"start": "10:31", "end": "12:00", "activity": "Solicitações de Compra", "client": "Interno"}, {"start": "13:00", "end": "15:36", "activity": "Solicitações de Compra", "client": "Interno"}]}, {"id": 1700000000003, "employees": ["Fabio Pereira"], "name": "Fabio Pereira", "date": "2026-04-01", "entries": [{"start": "07:30", "end": "11:40", "activity": "Montagem de Painel", "client": "CMZ"}, {"start": "12:50", "end": "16:30", "activity": "Montagem de Sensor Vai Radio", "client": "Interno"}]}, {"id": 1700000000004, "employees": ["Jeferson"], "name": "Jeferson", "date": "2026-04-01", "entries": [{"start": "04:40", "end": "12:13", "activity": "Viagem para obra", "client": "TMG"}, {"start": "12:34", "end": "18:50", "activity": "Viagem para obra", "client": "TMG"}]}, {"id": 1700000000005, "employees": ["Mateus Oliveira"], "name": "Mateus Oliveira", "date": "2026-04-01", "entries": [{"start": "04:40", "end": "12:13", "activity": "Viagem para obra", "client": "TMG"}, {"start": "12:34", "end": "18:50", "activity": "Viagem para obra", "client": "TMG"}]}, {"id": 1700000000006, "employees": ["Messias Neto"], "name": "Messias Neto", "date": "2026-04-01", "entries": [{"start": "07:20", "end": "11:50", "activity": "Montagem de Painel", "client": "La Vita"}, {"start": "12:50", "end": "16:40", "activity": "Montagem de Painel", "client": "La Vita"}]}, {"id": 1700000000007, "employees": ["Natan Vitor"], "name": "Natan Vitor", "date": "2026-04-01", "entries": [{"start": "07:18", "end": "08:00", "activity": "Checagem de mensagens do Whatsapp / emails", "client": "Interno"}, {"start": "08:05", "end": "12:00", "activity": "Atualização do Painel da ferti", "client": "Anidro"}, {"start": "13:05", "end": "17:05", "activity": "Atualização do Painel da ferti", "client": "Anidro"}]}, {"id": 1700000000008, "employees": ["Philipe Henrique"], "name": "Philipe Henrique", "date": "2026-04-01", "entries": [{"start": "07:30", "end": "09:30", "activity": "Diagrama unifilar / multifilar / layout 2d", "client": "Copacol"}, {"start": "13:00", "end": "16:40", "activity": "Layout de infra em campo", "client": "Copacol"}]}, {"id": 1700000000009, "employees": ["Denis Almeida"], "name": "Denis Almeida", "date": "2026-04-02", "entries": [{"start": "07:10", "end": "11:50", "activity": "Montagem de Painel", "client": "CMZ"}, {"start": "13:00", "end": "16:40", "activity": "Montagem de Painel", "client": "CMZ"}]}, {"id": 1700000000010, "employees": ["Erik Emanuel"], "name": "Erik Emanuel", "date": "2026-04-02", "entries": [{"start": "07:30", "end": "09:06", "activity": "Solicitações de Compra", "client": "Interno"}, {"start": "09:07", "end": "10:41", "activity": "Separação de Peças", "client": "Copacol"}, {"start": "10:42", "end": "11:58", "activity": "Etiquetas", "client": "La Vita"}, {"start": "13:00", "end": "13:17", "activity": "Etiquetas", "client": "La Vita"}, {"start": "13:18", "end": "14:02", "activity": "Etiquetas", "client": "Romeu Jose"}, {"start": "14:03", "end": "15:34", "activity": "Solicitações de Compra", "client": "Interno"}]}, {"id": 1700000000011, "employees": ["Fabio Pereira"], "name": "Fabio Pereira", "date": "2026-04-02", "entries": [{"start": "07:30", "end": "11:30", "activity": "Manutenção no Showroom", "client": "Interno"}, {"start": "13:00", "end": "16:40", "activity": "Montagem de Painel", "client": "CMZ"}]}, {"id": 1700000000012, "employees": ["Messias Neto"], "name": "Messias Neto", "date": "2026-04-02", "entries": [{"start": "07:20", "end": "11:50", "activity": "Montagem Painel", "client": "La Vita"}, {"start": "12:50", "end": "15:00", "activity": "Montagem de Painel", "client": "La Vita"}, {"start": "15:00", "end": "16:40", "activity": "Montagem de Painel", "client": "Copacol"}]}, {"id": 1700000000013, "employees": ["Natan Vitor"], "name": "Natan Vitor", "date": "2026-04-02", "entries": [{"start": "07:20", "end": "07:30", "activity": "Checagem de mensagens do WhatsApp / Emails", "client": "Interno"}, {"start": "07:40", "end": "12:00", "activity": "Atualização do Painel da ferti", "client": "Anidro"}, {"start": "13:00", "end": "14:30", "activity": "Espanhol", "client": "Interno"}, {"start": "14:35", "end": "17:00", "activity": "Teste no showroom", "client": "CTC"}]}, {"id": 1700000000014, "employees": ["Philipe Henrique"], "name": "Philipe Henrique", "date": "2026-04-02", "entries": [{"start": "07:30", "end": "07:44", "activity": "Ajuste no dimensionamento elétrico", "client": "CTC"}, {"start": "08:00", "end": "10:00", "activity": "Layout de instalação em campo", "client": "Copacol"}, {"start": "10:05", "end": "10:30", "activity": "Alinhamento de processos", "client": "Corteva"}, {"start": "13:00", "end": "16:00", "activity": "Lista de materiais p/ campo", "client": "Copacol"}]}, {"id": 1700000000015, "employees": ["Philipe Henrique"], "name": "Philipe Henrique", "date": "2026-04-03", "entries": [{"start": "08:00", "end": "10:50", "activity": "Diagrama multifilar", "client": "La Vita"}, {"start": "13:00", "end": "17:00", "activity": "Ajuste de projeto", "client": "Corteva"}]}, {"id": 1700000000016, "employees": ["Philipe Henrique"], "name": "Philipe Henrique", "date": "2026-04-04", "entries": [{"start": "09:45", "end": "12:00", "activity": "Diagrama unifilar / multifilar / dimensionamento / layout", "client": "Jeanne Black"}, {"start": "13:00", "end": "16:00", "activity": "Diagrama unifilar / multifilar / dimensionamento / layout", "client": "Jeanne Black"}, {"start": "16:05", "end": "17:40", "activity": "Layout de Instalação/ Lista de peças", "client": "CTC"}]}, {"id": 1700000000017, "employees": ["Philipe Henrique"], "name": "Philipe Henrique", "date": "2026-04-05", "entries": [{"start": "07:30", "end": "10:20", "activity": "Lista de peças", "client": "CTC"}, {"start": "09:05", "end": "09:40", "activity": "Ajustes no layout", "client": "Corteva"}, {"start": "09:42", "end": "11:00", "activity": "Ajustes no diagrama / layout infra obra", "client": "Brenda Jeanne"}]}, {"id": 1700000000018, "employees": ["Denis Almeida"], "name": "Denis Almeida", "date": "2026-04-06", "entries": [{"start": "07:10", "end": "08:30", "activity": "Mudança tensão de 380/220 em 3 Exaustores", "client": "Interno"}, {"start": "09:00", "end": "11:50", "activity": "Montagem de Painel", "client": "CMZ"}, {"start": "13:00", "end": "14:20", "activity": "Finalização de Aquecedor para Entrega", "client": "Copacol"}, {"start": "14:30", "end": "16:45", "activity": "Montagem de Painel", "client": "Copacol"}]}, {"id": 1700000000019, "employees": ["Donizete"], "name": "Donizete", "date": "2026-04-06", "entries": [{"start": "07:20", "end": "08:30", "activity": "Manutenção esfutas", "client": "CTC"}, {"start": "08:30", "end": "11:40", "activity": "Manutenção Cavalete Ferti", "client": "La Vita"}, {"start": "12:00", "end": "15:30", "activity": "Manutenção Cavalete Ferti", "client": "La Vita"}, {"start": "15:30", "end": "17:30", "activity": "Conferencia de peças dos painéis da Corteva", "client": "Corteva"}]}, {"id": 1700000000020, "employees": ["Erik Emanuel"], "name": "Erik Emanuel", "date": "2026-04-06", "entries": [{"start": "07:27", "end": "08:29", "activity": "Verificação de Email", "client": "Interno"}, {"start": "08:30", "end": "08:45", "activity": "Etiqueta", "client": "La Vita"}, {"start": "08:46", "end": "10:42", "activity": "Etiqueta", "client": "CMZ"}, {"start": "10:43", "end": "11:29", "activity": "Etiqueta", "client": "Copacol"}, {"start": "11:30", "end": "12:00", "activity": "Solicitações de Compra", "client": "Interno"}, {"start": "13:00", "end": "15:35", "activity": "Solicitações de Compra", "client": "Interno"}]}, {"id": 1700000000021, "employees": ["Fabio Pereira"], "name": "Fabio Pereira", "date": "2026-04-06", "entries": [{"start": "07:30", "end": "11:50", "activity": "Montagem de Painel", "client": "CMZ"}, {"start": "13:00", "end": "14:00", "activity": "Montagem de Painel", "client": "CMZ"}, {"start": "14:00", "end": "16:40", "activity": "Montagem de Estação", "client": "La Vita"}]}, {"id": 1700000000022, "employees": ["Jeferson"], "name": "Jeferson", "date": "2026-04-06", "entries": [{"start": "06:56", "end": "11:40", "activity": "Obra", "client": "TMG"}, {"start": "12:04", "end": "17:26", "activity": "Obra", "client": "TMG"}]}, {"id": 1700000000023, "employees": ["Mateus Oliveira"], "name": "Mateus Oliveira", "date": "2026-04-06", "entries": [{"start": "06:56", "end": "11:40", "activity": "Obra", "client": "TMG"}, {"start": "12:04", "end": "17:26", "activity": "Obra", "client": "TMG"}]}, {"id": 1700000000024, "employees": ["Messias Neto"], "name": "Messias Neto", "date": "2026-04-06", "entries": [{"start": "07:20", "end": "11:50", "activity": "Montagem de Painel", "client": "Copacol"}, {"start": "12:50", "end": "15:00", "activity": "Montagem de Painel", "client": "Copacol"}, {"start": "15:00", "end": "16:50", "activity": "Montagem de Painel", "client": "La Vita"}]}, {"id": 1700000000025, "employees": ["Natan Vitor"], "name": "Natan Vitor", "date": "2026-04-06", "entries": [{"start": "07:20", "end": "07:30", "activity": "Checagem de mensagens do WhatsApp / Emails", "client": "Interno"}, {"start": "07:40", "end": "12:00", "activity": "Teste programação da fert", "client": "Anidro"}, {"start": "12:56", "end": "17:05", "activity": "teste final painel da Anidro", "client": "Anidro"}]}, {"id": 1700000000026, "employees": ["Philipe Henrique"], "name": "Philipe Henrique", "date": "2026-04-06", "entries": [{"start": "07:30", "end": "07:45", "activity": "Ajustes no projeto", "client": "Anidro"}, {"start": "08:00", "end": "08:11", "activity": "Ajustes no projeto", "client": "Profigen"}, {"start": "13:25", "end": "17:30", "activity": "Dimensionamento / Diagrama Elétrico", "client": "Klabin"}]}, {"id": 1700000000027, "employees": ["Denis Almeida"], "name": "Denis Almeida", "date": "2026-04-07", "entries": [{"start": "07:30", "end": "11:50", "activity": "Estrutura Painel", "client": "Copacol"}, {"start": "13:00", "end": "16:40", "activity": "Layout PAinel", "client": "CMZ"}]}, {"id": 1700000000028, "employees": ["Donizete"], "name": "Donizete", "date": "2026-04-07", "entries": [{"start": "07:00", "end": "09:30", "activity": "Finalizando conferência das peças dos painéis corteva", "client": "Corteva"}, {"start": "10:00", "end": "11:45", "activity": "Acertando funcionamento pelo aplicativo bomba gotejo", "client": "CTC"}, {"start": "13:00", "end": "16:45", "activity": "Alterando de local acionamento do comando da janela Zenital estufa do sr Hermann", "client": "Interno"}]}, {"id": 1700000000029, "employees": ["Erik Emanuel"], "name": "Erik Emanuel", "date": "2026-04-07", "entries": [{"start": "07:28", "end": "07:53", "activity": "Etiqueta", "client": "Anidro"}, {"start": "07:53", "end": "09:27", "activity": "Manual", "client": "Anidro"}, {"start": "09:28", "end": "11:14", "activity": "Pendencias", "client": "Interno"}, {"start": "11:15", "end": "12:00", "activity": "Solicitações de Compra", "client": "Interno"}, {"start": "12:59", "end": "13:40", "activity": "Separação de Peças", "client": "Corteva"}, {"start": "13:41", "end": "14:29", "activity": "Solicitações de Compra", "client": "Interno"}, {"start": "14:30", "end": "15:33", "activity": "Manual", "client": "Romeu Jose"}]}, {"id": 1700000000030, "employees": ["Fabio Pereira"], "name": "Fabio Pereira", "date": "2026-04-07", "entries": [{"start": "07:30", "end": "09:00", "activity": "Montagem de Painel", "client": "CMZ"}, {"start": "09:00", "end": "10:30", "activity": "Reunião Interna", "client": "Interno"}, {"start": "10:30", "end": "11:50", "activity": "Montagem de Painel", "client": "CMZ"}, {"start": "13:00", "end": "16:50", "activity": "Montagem de Painel", "client": "CMZ"}]}, {"id": 1700000000031, "employees": ["Jeferson"], "name": "Jeferson", "date": "2026-04-07", "entries": [{"start": "06:51", "end": "10:46", "activity": "Ajuste de agitadores da Ferti", "client": "TMG"}, {"start": "10:46", "end": "11:35", "activity": "Viagem de volta", "client": "TMG"}, {"start": "12:00", "end": "18:59", "activity": "Viagem de volta", "client": "TMG"}]}, {"id": 1700000000032, "employees": ["Mateus Oliveira"], "name": "Mateus Oliveira", "date": "2026-04-07", "entries": [{"start": "06:51", "end": "10:46", "activity": "Ajuste de agitadores ferti", "client": "TMG"}, {"start": "10:46", "end": "11:35", "activity": "Viagem de volta", "client": "TMG"}, {"start": "12:00", "end": "18:59", "activity": "Viagem de volta", "client": "TMG"}]}, {"id": 1700000000033, "employees": ["Messias Neto"], "name": "Messias Neto", "date": "2026-04-07", "entries": [{"start": "07:20", "end": "11:50", "activity": "Montagem de Painel", "client": "La Vita"}, {"start": "12:50", "end": "15:00", "activity": "Montagem de Painel", "client": "La Vita"}, {"start": "15:00", "end": "16:40", "activity": "Montagem de Painel", "client": "Copacol"}]}, {"id": 1700000000034, "employees": ["Natan Vitor"], "name": "Natan Vitor", "date": "2026-04-07", "entries": [{"start": "07:15", "end": "07:20", "activity": "Checagem de mensagens do WhatsApp / Emails", "client": "Interno"}, {"start": "07:30", "end": "12:05", "activity": "Programação La vita", "client": "La Vita"}, {"start": "13:00", "end": "17:05", "activity": "Programação La vita", "client": "La Vita"}]}, {"id": 1700000000035, "employees": ["Denis Almeida"], "name": "Denis Almeida", "date": "2026-04-08", "entries": [{"start": "07:15", "end": "11:50", "activity": "Estrutura do Painel", "client": "CMZ"}, {"start": "13:00", "end": "14:00", "activity": "Estrutura do Painel", "client": "CMZ"}, {"start": "14:10", "end": "16:45", "activity": "Soquete de lampada", "client": "Interno"}]}, {"id": 1700000000036, "employees": ["Donizete"], "name": "Donizete", "date": "2026-04-08", "entries": [{"start": "07:09", "end": "09:00", "activity": "Organizando local para início das montagem dos painéis corteva", "client": "Corteva"}, {"start": "09:30", "end": "11:45", "activity": "início nas separação e pre montagem das peças para instalação em campo ferti", "client": "La Vita"}, {"start": "13:00", "end": "15:00", "activity": "Finalizando serviços", "client": "La Vita"}, {"start": "15:00", "end": "16:00", "activity": "Separação dos motores das barras", "client": "Corteva"}, {"start": "16:00", "end": "17:00", "activity": "Auxílio ao Rodolfo na rede alimentação do novo painel da administração", "client": "Interno"}]}, {"id": 1700000000037, "employees": ["Erik Emanuel"], "name": "Erik Emanuel", "date": "2026-04-08", "entries": [{"start": "07:25", "end": "08:59", "activity": "Manual", "client": "Romeu Jose"}, {"start": "09:00", "end": "10:21", "activity": "Etiqueta", "client": "Interno"}, {"start": "10:22", "end": "11:24", "activity": "Separação de Peças", "client": "Profigen"}, {"start": "11:25", "end": "12:00", "activity": "Solicitações de Compra", "client": "Interno"}, {"start": "13:00", "end": "13:40", "activity": "Manual", "client": "Rubens Vieira"}, {"start": "13:41", "end": "14:26", "activity": "Manual", "client": "CTC"}, {"start": "14:27", "end": "15:34", "activity": "Solicitações de Compra", "client": "Interno"}]}, {"id": 1700000000038, "employees": ["Fabio Pereira"], "name": "Fabio Pereira", "date": "2026-04-08", "entries": [{"start": "07:30", "end": "10:00", "activity": "Organização do setor", "client": "Interno"}, {"start": "10:00", "end": "11:50", "activity": "Embalando sensor via radio", "client": "CTC"}, {"start": "13:00", "end": "14:20", "activity": "Montagem de Painel", "client": "CMZ"}, {"start": "13:00", "end": "14:20", "activity": "Montagem de Painel", "client": "CMZ"}]}, {"id": 1700000000039, "employees": ["Jeferson"], "name": "Jeferson", "date": "2026-04-08", "entries": [{"start": "06:39", "end": "11:25", "activity": "Viagem de Volta", "client": "TMG"}, {"start": "11:55", "end": "16:21", "activity": "Viagem de Volta", "client": "TMG"}]}, {"id": 1700000000040, "employees": ["Mateus Oliveira"], "name": "Mateus Oliveira", "date": "2026-04-08", "entries": [{"start": "06:39", "end": "11:25", "activity": "Viagem de Volta", "client": "TMG"}, {"start": "11:55", "end": "16:21", "activity": "Viagem de Volta", "client": "TMG"}]}, {"id": 1700000000041, "employees": ["Messias Neto"], "name": "Messias Neto", "date": "2026-04-08", "entries": [{"start": "07:20", "end": "11:50", "activity": "Montagem de Painel", "client": "Copacol"}, {"start": "12:50", "end": "16:40", "activity": "Montagem de Painel", "client": "Copacol"}]}, {"id": 1700000000042, "employees": ["Natan Vitor"], "name": "Natan Vitor", "date": "2026-04-08", "entries": [{"start": "07:30", "end": "07:40", "activity": "Checagem de mensagens do WhatsApp / Emails", "client": "Interno"}, {"start": "08:00", "end": "12:05", "activity": "Programação La vita", "client": "La Vita"}, {"start": "12:58", "end": "17:36", "activity": "Programação La vita", "client": "La Vita"}]}, {"id": 1700000000043, "employees": ["Denis Almeida"], "name": "Denis Almeida", "date": "2026-04-09", "entries": [{"start": "07:10", "end": "10:50", "activity": "Estrutura do Painel", "client": "Copacol"}, {"start": "11:00", "end": "11:50", "activity": "Layout de Painel", "client": "Profigen"}, {"start": "13:00", "end": "16:45", "activity": "Layout de Painel", "client": "Profigen"}]}, {"id": 1700000000044, "employees": ["Donizete"], "name": "Donizete", "date": "2026-04-09", "entries": [{"start": "07:10", "end": "10:20", "activity": "Mudança de local do painel da barra do Showroom", "client": "Interno"}, {"start": "12:37", "end": "17:00", "activity": "Levantamento para inicios das atividades de instalação da obra", "client": "Corteva"}]}, {"id": 1700000000045, "employees": ["Erik Emanuel"], "name": "Erik Emanuel", "date": "2026-04-09", "entries": [{"start": "07:25", "end": "08:41", "activity": "Cadastro de novos painéis", "client": "CMZ"}, {"start": "08:42", "end": "09:26", "activity": "Romaneio", "client": "Copacol"}, {"start": "09:27", "end": "12:00", "activity": "Solicitações de Compra", "client": "Interno"}, {"start": "13:00", "end": "14:25", "activity": "Solicitações de Compra", "client": "Interno"}, {"start": "14:26", "end": "15:35", "activity": "Etiqueta", "client": "Copacol"}]}, {"id": 1700000000046, "employees": ["Fabio Pereira"], "name": "Fabio Pereira", "date": "2026-04-09", "entries": [{"start": "07:30", "end": "11:50", "activity": "Montagem de Painel", "client": "CMZ"}, {"start": "13:00", "end": "16:40", "activity": "Montagem de Painel", "client": "CMZ"}]}, {"id": 1700000000047, "employees": ["Mateus Oliveira"], "name": "Mateus Oliveira", "date": "2026-04-09", "entries": [{"start": "07:30", "end": "11:50", "activity": "Montagem de Painel", "client": "CMZ"}, {"start": "13:00", "end": "16:50", "activity": "Montagem de Painel", "client": "CMZ"}]}, {"id": 1700000000048, "employees": ["Messias Neto"], "name": "Messias Neto", "date": "2026-04-09", "entries": [{"start": "07:20", "end": "11:50", "activity": "Montagem de Painel", "client": "Copacol"}, {"start": "12:50", "end": "16:40", "activity": "Montagem de Painel", "client": "Copacol"}]}, {"id": 1700000000049, "employees": ["Natan Vitor"], "name": "Natan Vitor", "date": "2026-04-09", "entries": [{"start": "07:15", "end": "07:30", "activity": "Checagem de mensagens do WhatsApp / Emails", "client": "Interno"}, {"start": "07:32", "end": "12:05", "activity": "Programação La vita", "client": "La Vita"}, {"start": "13:05", "end": "14:35", "activity": "Espanhol", "client": "Interno"}, {"start": "14:20", "end": "17:30", "activity": "Programação La vita", "client": "La Vita"}]}, {"id": 1700000000050, "employees": ["Philipe Henrique"], "name": "Philipe Henrique", "date": "2026-04-09", "entries": [{"start": "10:00", "end": "12:00", "activity": "Lista de instalação em campo", "client": "Profigen"}, {"start": "13:00", "end": "17:00", "activity": "Diagrama multifilar", "client": "Klabin"}]}, {"id": 1700000000051, "employees": ["Donizete"], "name": "Donizete", "date": "2026-04-10", "entries": [{"start": "07:20", "end": "11:48", "activity": "Barramentos painel potencia", "client": "Corteva"}, {"start": "13:00", "end": "14:00", "activity": "Barramentos painel potencia", "client": "Corteva"}]}, {"id": 1700000000052, "employees": ["Fabio Pereira"], "name": "Fabio Pereira", "date": "2026-04-10", "entries": [{"start": "07:30", "end": "11:50", "activity": "Montagem de Painel", "client": "CMZ"}, {"start": "13:00", "end": "16:30", "activity": "Montagem de Painel", "client": "CMZ"}]}, {"id": 1700000000053, "employees": ["Messias Neto"], "name": "Messias Neto", "date": "2026-04-10", "entries": [{"start": "07:20", "end": "11:50", "activity": "Montagem de Painel", "client": "Copacol"}, {"start": "12:50", "end": "16:00", "activity": "Montagem de Painel", "client": "Copacol"}]}, {"id": 1700000000054, "employees": ["Natan Vitor"], "name": "Natan Vitor", "date": "2026-04-10", "entries": [{"start": "07:20", "end": "07:35", "activity": "Checagem de mensagens do WhatsApp / Emails", "client": "Interno"}, {"start": "07:40", "end": "12:05", "activity": "Programação La vita", "client": "La Vita"}, {"start": "13:05", "end": "17:00", "activity": "Programação La vita", "client": "La Vita"}]}, {"id": 1700000000055, "employees": ["Philipe Henrique"], "name": "Philipe Henrique", "date": "2026-04-10", "entries": [{"start": "08:11", "end": "12:00", "activity": "Diagrama multifilar / Layout", "client": "Klabin"}, {"start": "13:30", "end": "16:00", "activity": "Diagrama multifilar / Layout", "client": "Klabin"}]}, {"id": 1700000000056, "employees": ["Philipe Henrique"], "name": "Philipe Henrique", "date": "2026-04-11", "entries": [{"start": "10:00", "end": "12:00", "activity": "Ajustes no projeto / infra obra", "client": "Corteva"}, {"start": "13:00", "end": "16:00", "activity": "Diagrama Multifilar", "client": "La Vita"}]}, {"id": 1700000000057, "employees": ["Philipe Henrique"], "name": "Philipe Henrique", "date": "2026-04-12", "entries": [{"start": "07:30", "end": "09:00", "activity": "Ajustes de Projeto", "client": "Corteva"}, {"start": "13:00", "end": "17:00", "activity": "Layout 2d + Infra Obra", "client": "La Vita"}]}, {"id": 1700000000058, "employees": ["Denis Almeida"], "name": "Denis Almeida", "date": "2026-04-13", "entries": [{"start": "07:10", "end": "11:50", "activity": "Montagem de painel", "client": "Klabin"}, {"start": "13:00", "end": "16:45", "activity": "Montagem de painel", "client": "Klabin"}]}, {"id": 1700000000059, "employees": ["Donizete"], "name": "Donizete", "date": "2026-04-13", "entries": [{"start": "07:00", "end": "09:00", "activity": "Showroom", "client": "Interno"}, {"start": "09:00", "end": "11:40", "activity": "Painel barramentos", "client": "CTC"}, {"start": "12:15", "end": "16:45", "activity": "Aterramento", "client": "Corteva"}]}, {"id": 1700000000060, "employees": ["Erik Emanuel"], "name": "Erik Emanuel", "date": "2026-04-13", "entries": [{"start": "07:27", "end": "09:43", "activity": "Etiqueta", "client": "CMZ"}, {"start": "09:44", "end": "12:03", "activity": "Etiqueta", "client": "Copacol"}, {"start": "12:57", "end": "15:33", "activity": "Etiqueta", "client": "Copacol"}]}, {"id": 1700000000061, "employees": ["Fabio Pereira"], "name": "Fabio Pereira", "date": "2026-04-13", "entries": [{"start": "07:30", "end": "11:50", "activity": "Montagem de Painel", "client": "Klabin"}, {"start": "13:00", "end": "16:50", "activity": "Montagem de Painel", "client": "Corteva"}]}, {"id": 1700000000062, "employees": ["Mateus Oliveira"], "name": "Mateus Oliveira", "date": "2026-04-13", "entries": [{"start": "07:30", "end": "11:50", "activity": "Barramento Montagem", "client": "Corteva"}, {"start": "13:00", "end": "15:50", "activity": "Barramento Montagem", "client": "Corteva"}, {"start": "15:50", "end": "16:50", "activity": "Ajuste na estação meteorologica", "client": "La Vita"}]}, {"id": 1700000000063, "employees": ["Messias Neto"], "name": "Messias Neto", "date": "2026-04-13", "entries": [{"start": "07:20", "end": "11:50", "activity": "Montagem de Painel", "client": "Copacol"}, {"start": "12:50", "end": "16:40", "activity": "Montagem de Painel", "client": "Copacol"}]}, {"id": 1700000000064, "employees": ["Natan Vitor"], "name": "Natan Vitor", "date": "2026-04-13", "entries": [{"start": "07:20", "end": "12:05", "activity": "Programação La vita", "client": "La Vita"}, {"start": "13:00", "end": "15:00", "activity": "Programação La vita", "client": "La Vita"}]}, {"id": 1700000000065, "employees": ["Philipe Henrique"], "name": "Philipe Henrique", "date": "2026-04-13", "entries": [{"start": "07:40", "end": "11:00", "activity": "Layout 2d / solicitação de base / diagrama unifilar/ multifilar", "client": "Klabin"}, {"start": "13:15", "end": "16:00", "activity": "Diagrama unifilar/ multifilar", "client": "Klabin"}]}, {"id": 1700000000066, "employees": ["Denis Almeida"], "name": "Denis Almeida", "date": "2026-04-14", "entries": [{"start": "07:15", "end": "09:58", "activity": "Estrutura do painel", "client": "Klabin"}, {"start": "10:10", "end": "11:20", "activity": "Keize", "client": "Copacol"}, {"start": "13:00", "end": "15:10", "activity": "Layout painel", "client": "Klabin"}, {"start": "15:25", "end": "16:45", "activity": "Keize", "client": "Interno"}]}, {"id": 1700000000067, "employees": ["Donizete"], "name": "Donizete", "date": "2026-04-14", "entries": [{"start": "07:00", "end": "11:39", "activity": "Aterramento", "client": "Corteva"}, {"start": "12:35", "end": "17:00", "activity": "Aterramento", "client": "Corteva"}]}, {"id": 1700000000068, "employees": ["Erik Emanuel"], "name": "Erik Emanuel", "date": "2026-04-14", "entries": [{"start": "07:28", "end": "08:55", "activity": "Separação de Peças", "client": "Klabin"}, {"start": "08:56", "end": "09:30", "activity": "Etiqueta", "client": "Profigen"}, {"start": "09:31", "end": "12:00", "activity": "Solicitações de Compra", "client": "Interno"}, {"start": "12:55", "end": "13:24", "activity": "Manual", "client": "Copacol"}, {"start": "13:25", "end": "14:35", "activity": "Etiqueta", "client": "Klabin"}, {"start": "14:36", "end": "15:30", "activity": "Etiqueta", "client": "Corteva"}]}, {"id": 1700000000069, "employees": ["Fabio Pereira"], "name": "Fabio Pereira", "date": "2026-04-14", "entries": [{"start": "07:30", "end": "11:50", "activity": "Montagem de Painel", "client": "Corteva"}, {"start": "13:00", "end": "16:50", "activity": "Montagem de Painel", "client": "Corteva"}]}, {"id": 1700000000070, "employees": ["Jeferson"], "name": "Jeferson", "date": "2026-04-14", "entries": [{"start": "07:00", "end": "11:39", "activity": "Aterramento", "client": "Corteva"}, {"start": "12:35", "end": "17:00", "activity": "Aterramento", "client": "Corteva"}]}, {"id": 1700000000071, "employees": ["Mateus Oliveira"], "name": "Mateus Oliveira", "date": "2026-04-14", "entries": [{"start": "07:30", "end": "11:50", "activity": "Montagem de alinhamentos painel", "client": "Corteva"}, {"start": "13:00", "end": "16:50", "activity": "Montagem de alinhamentos painel", "client": "Corteva"}]}, {"id": 1700000000072, "employees": ["Messias Neto"], "name": "Messias Neto", "date": "2026-04-14", "entries": [{"start": "07:20", "end": "11:50", "activity": "Montagem de sensor", "client": "Copacol"}, {"start": "12:50", "end": "16:40", "activity": "Montagem de sensor", "client": "Klabin"}]}, {"id": 1700000000073, "employees": ["Natan Vitor"], "name": "Natan Vitor", "date": "2026-04-14", "entries": [{"start": "07:20", "end": "07:30", "activity": "Checagem de mensagens do WhatsApp / Emails", "client": "Interno"}, {"start": "07:35", "end": "12:05", "activity": "Programação La vita", "client": "La Vita"}, {"start": "13:00", "end": "17:00", "activity": "Programação La vita", "client": "La Vita"}]}, {"id": 1700000000074, "employees": ["Philipe Henrique"], "name": "Philipe Henrique", "date": "2026-04-14", "entries": [{"start": "07:50", "end": "08:10", "activity": "Atualização de projeto", "client": "TMG"}, {"start": "08:20", "end": "10:00", "activity": "Ajuste nos projetos / teste do painel", "client": "Copacol"}, {"start": "10:40", "end": "11:40", "activity": "Lista de peças", "client": "Praxedes"}, {"start": "13:00", "end": "15:00", "activity": "Ajuste nos projetos", "client": "Corteva"}]}, {"id": 1700000000075, "employees": ["Denis Almeida"], "name": "Denis Almeida", "date": "2026-04-15", "entries": [{"start": "07:40", "end": "11:50", "activity": "Troca de cabo de motores de exaustores", "client": "Interno"}]}, {"id": 1700000000076, "employees": ["Donizete"], "name": "Donizete", "date": "2026-04-15", "entries": [{"start": "07:00", "end": "11:36", "activity": "Aterramento", "client": "Corteva"}, {"start": "12:34", "end": "17:00", "activity": "Aterramento", "client": "Corteva"}]}, {"id": 1700000000077, "employees": ["Erik Emanuel"], "name": "Erik Emanuel", "date": "2026-04-15", "entries": [{"start": "08:00", "end": "09:22", "activity": "Manual", "client": "Copacol"}, {"start": "09:23", "end": "11:30", "activity": "Etiqueta", "client": "Corteva"}, {"start": "11:31", "end": "12:00", "activity": "Solicitações de Compra", "client": "Interno"}, {"start": "12:56", "end": "13:32", "activity": "Solicitações de Compra", "client": "Interno"}, {"start": "13:33", "end": "14:39", "activity": "Separação de Peças", "client": "Klabin"}, {"start": "14:40", "end": "15:30", "activity": "Solicitações de Compra", "client": "Interno"}]}, {"id": 1700000000078, "employees": ["Fabio Pereira"], "name": "Fabio Pereira", "date": "2026-04-15", "entries": [{"start": "07:30", "end": "11:50", "activity": "Montagem de Painel", "client": "Corteva"}, {"start": "13:00", "end": "16:50", "activity": "Montagem de Painel", "client": "Corteva"}]}, {"id": 1700000000079, "employees": ["Jeferson"], "name": "Jeferson", "date": "2026-04-15", "entries": [{"start": "07:00", "end": "11:39", "activity": "Aterramento", "client": "Corteva"}, {"start": "12:35", "end": "17:00", "activity": "Aterramento", "client": "Corteva"}]}, {"id": 1700000000080, "employees": ["Mateus Oliveira"], "name": "Mateus Oliveira", "date": "2026-04-15", "entries": [{"start": "07:30", "end": "11:50", "activity": "Montagem de Painel", "client": "Corteva"}, {"start": "13:00", "end": "16:50", "activity": "Montagem de Painel", "client": "Corteva"}]}, {"id": 1700000000081, "employees": ["Messias Neto"], "name": "Messias Neto", "date": "2026-04-15", "entries": [{"start": "07:20", "end": "11:50", "activity": "Montagem de Painel", "client": "Klabin"}, {"start": "12:50", "end": "16:40", "activity": "Montagem de Painel", "client": "Klabin"}]}, {"id": 1700000000082, "employees": ["Natan Vitor"], "name": "Natan Vitor", "date": "2026-04-15", "entries": [{"start": "08:00", "end": "08:05", "activity": "Checagem de mensagens do WhatsApp / Emails", "client": "Interno"}, {"start": "08:10", "end": "12:05", "activity": "Programação La vita", "client": "La Vita"}, {"start": "13:00", "end": "17:05", "activity": "Programação La vita", "client": "La Vita"}]}, {"id": 1700000000083, "employees": ["Philipe Henrique"], "name": "Philipe Henrique", "date": "2026-04-15", "entries": [{"start": "08:00", "end": "09:30", "activity": "Ajuste nos projetos", "client": "Corteva"}, {"start": "10:00", "end": "11:00", "activity": "Layout infra em campo", "client": "Klabin"}, {"start": "13:10", "end": "17:00", "activity": "Layout infra em campo", "client": "Klabin"}]}, {"id": 1700000000084, "employees": ["Denis Almeida"], "name": "Denis Almeida", "date": "2026-04-16", "entries": [{"start": "07:10", "end": "11:50", "activity": "Montagem de Painel", "client": "Klabin"}, {"start": "13:00", "end": "16:40", "activity": "Montagem de Painel", "client": "Klabin"}]}, {"id": 1700000000085, "employees": ["Donizete"], "name": "Donizete", "date": "2026-04-16", "entries": [{"start": "06:45", "end": "11:31", "activity": "Aterramento do Barracão", "client": "Corteva"}, {"start": "12:31", "end": "17:13", "activity": "Aterramento do Barracão", "client": "Corteva"}]}, {"id": 1700000000086, "employees": ["Erik Emanuel"], "name": "Erik Emanuel", "date": "2026-04-16", "entries": [{"start": "07:25", "end": "08:32", "activity": "Solicitações de Compra", "client": "Interno"}, {"start": "08:33", "end": "09:42", "activity": "Separação de Peças", "client": "Interno"}, {"start": "09:43", "end": "12:00", "activity": "Romaneio", "client": "Profigen"}, {"start": "13:00", "end": "15:30", "activity": "Solicitações de Compra", "client": "Interno"}]}, {"id": 1700000000087, "employees": ["Fabio Pereira"], "name": "Fabio Pereira", "date": "2026-04-16", "entries": [{"start": "07:30", "end": "11:50", "activity": "Montagem de Painel", "client": "Corteva"}, {"start": "13:00", "end": "15:30", "activity": "Montagem de Painel", "client": "Corteva"}]}, {"id": 1700000000088, "employees": ["Jeferson"], "name": "Jeferson", "date": "2026-04-16", "entries": [{"start": "06:45", "end": "11:31", "activity": "Aterramento do Barracão", "client": "Corteva"}, {"start": "12:31", "end": "17:13", "activity": "Aterramento do Barracão", "client": "Corteva"}]}, {"id": 1700000000089, "employees": ["Messias Neto"], "name": "Messias Neto", "date": "2026-04-16", "entries": [{"start": "07:20", "end": "11:50", "activity": "Montagem de Painel", "client": "Klabin"}, {"start": "12:50", "end": "16:40", "activity": "Montagem de Painel", "client": "Klabin"}]}, {"id": 1700000000090, "employees": ["Natan Vitor"], "name": "Natan Vitor", "date": "2026-04-16", "entries": [{"start": "07:20", "end": "07:35", "activity": "Checagem de mensagens do WhatsApp / Emails", "client": "Interno"}, {"start": "08:00", "end": "12:05", "activity": "Programação La vita", "client": "La Vita"}, {"start": "13:00", "end": "17:40", "activity": "Programação La vita", "client": "La Vita"}]}, {"id": 1700000000091, "employees": ["Philipe Henrique"], "name": "Philipe Henrique", "date": "2026-04-16", "entries": [{"start": "07:40", "end": "09:40", "activity": "Reunião de alinhamento", "client": "Interno"}, {"start": "10:00", "end": "11:00", "activity": "Teste em painel", "client": "Profigen"}, {"start": "13:00", "end": "14:00", "activity": "Ajuste no projeto", "client": "Corteva"}, {"start": "14:05", "end": "14:15", "activity": "Conferencia do layout da porta p/furação", "client": "Klabin"}]}, {"id": 1700000000092, "employees": ["Denis Almeida"], "name": "Denis Almeida", "date": "2026-04-17", "entries": [{"start": "07:15", "end": "11:50", "activity": "Estrutura do Painel", "client": "Klabin"}, {"start": "13:00", "end": "16:40", "activity": "Estrutura do Painel", "client": "Klabin"}]}, {"id": 1700000000093, "employees": ["Donizete"], "name": "Donizete", "date": "2026-04-17", "entries": [{"start": "06:45", "end": "11:29", "activity": "Aterramento do Barracão", "client": "Corteva"}, {"start": "12:27", "end": "17:17", "activity": "Aterramento do Barracão", "client": "Corteva"}]}, {"id": 1700000000094, "employees": ["Erik Emanuel"], "name": "Erik Emanuel", "date": "2026-04-17", "entries": [{"start": "07:25", "end": "09:03", "activity": "Solicitação de Compra", "client": "Interno"}, {"start": "09:04", "end": "10:25", "activity": "Manual", "client": "Profigen"}, {"start": "10:26", "end": "12:00", "activity": "Solicitação de Compra", "client": "Interno"}, {"start": "13:00", "end": "14:22", "activity": "Manual", "client": "Corteva"}, {"start": "14:23", "end": "15:35", "activity": "Solicitação de Compra", "client": "Interno"}]}, {"id": 1700000000095, "employees": ["Fabio Pereira"], "name": "Fabio Pereira", "date": "2026-04-17", "entries": [{"start": "07:30", "end": "11:50", "activity": "Montagem de Painel", "client": "Corteva"}, {"start": "13:00", "end": "16:50", "activity": "Montagem de Painel", "client": "Corteva"}]}, {"id": 1700000000096, "employees": ["Messias Neto"], "name": "Messias Neto", "date": "2026-04-17", "entries": [{"start": "07:20", "end": "11:50", "activity": "Montagem de Painel", "client": "Klabin"}, {"start": "12:50", "end": "16:40", "activity": "Montagem de Painel", "client": "Klabin"}]}, {"id": 1700000000097, "employees": ["Natan Vitor"], "name": "Natan Vitor", "date": "2026-04-17", "entries": [{"start": "07:25", "end": "07:35", "activity": "Checagem de mensagens do WhatsApp / Emails", "client": "Interno"}, {"start": "07:40", "end": "12:05", "activity": "Programação La vita", "client": "La Vita"}, {"start": "13:00", "end": "16:50", "activity": "Programação La vita", "client": "La Vita"}]}, {"id": 1700000000098, "employees": ["Philipe Henrique"], "name": "Philipe Henrique", "date": "2026-04-17", "entries": [{"start": "07:30", "end": "08:20", "activity": "Projeto elétrico", "client": "Interno"}, {"start": "09:00", "end": "10:40", "activity": "Layout 3d de instalação em campo", "client": "Klabin"}]}, {"id": 1700000000099, "employees": ["Donizete"], "name": "Donizete", "date": "2026-04-18", "entries": [{"start": "07:00", "end": "10:34", "activity": "Trabalho no cavalete da ferti irrigação do show room", "client": "Interno"}]}, {"id": 1700000000100, "employees": ["Philipe Henrique"], "name": "Philipe Henrique", "date": "2026-04-18", "entries": [{"start": "08:00", "end": "11:20", "activity": "Diagrama unifila/ multifilar / dimensionamento eletrico", "client": "Agrivale"}]}, {"id": 1700000000101, "employees": ["Denis Almeida"], "name": "Denis Almeida", "date": "2026-04-20", "entries": [{"start": "07:10", "end": "11:50", "activity": "Montagem de painel", "client": "Klabin"}, {"start": "13:00", "end": "15:00", "activity": "Montagem de painel", "client": "Klabin"}, {"start": "15:15", "end": "16:40", "activity": "Montagem de painel", "client": "Agrivale"}]}, {"id": 1700000000102, "employees": ["Donizete"], "name": "Donizete", "date": "2026-04-20", "entries": [{"start": "08:00", "end": "11:30", "activity": "Aterramento do Barracão", "client": "Corteva"}, {"start": "12:45", "end": "14:30", "activity": "Aterramento do Barracão", "client": "Corteva"}, {"start": "15:00", "end": "17:00", "activity": "Auxilio painéis", "client": "Corteva"}]}, {"id": 1700000000103, "employees": ["Fabio Pereira"], "name": "Fabio Pereira", "date": "2026-04-20", "entries": [{"start": "07:30", "end": "11:50", "activity": "Montagem de painel", "client": "Corteva"}, {"start": "13:00", "end": "16:50", "activity": "Montagem de painel", "client": "Corteva"}]}, {"id": 1700000000104, "employees": ["Messias Neto"], "name": "Messias Neto", "date": "2026-04-20", "entries": [{"start": "07:20", "end": "11:50", "activity": "Montagem de painel", "client": "Klabin"}, {"start": "12:50", "end": "16:40", "activity": "Montagem de painel", "client": "Klabin"}]}, {"id": 1700000000105, "employees": ["Natan Vitor"], "name": "Natan Vitor", "date": "2026-04-20", "entries": [{"start": "07:20", "end": "12:05", "activity": "barra do showroom", "client": "Interno"}, {"start": "13:00", "end": "17:10", "activity": "barra do showroom", "client": "Interno"}]}, {"id": 1700000000106, "employees": ["Philipe Henrique"], "name": "Philipe Henrique", "date": "2026-04-20", "entries": [{"start": "08:00", "end": "11:40", "activity": "Layout 2d/ layout 3d / lista de peças do painel + campo", "client": "Agrivale"}, {"start": "13:00", "end": "16:00", "activity": "Layout 2d/ layout 3d / lista de peças do painel + campo", "client": "Agrivale"}, {"start": "16:30", "end": "17:00", "activity": "Ajuste no projeto", "client": "Corteva"}]}, {"id": 1700000000107, "employees": ["Denis Almeida"], "name": "Denis Almeida", "date": "2026-04-21", "entries": [{"start": "07:10", "end": "11:50", "activity": "Montagem de painel", "client": "Agrivale"}, {"start": "13:00", "end": "15:00", "activity": "Montagem de painel", "client": "Agrivale"}]}, {"id": 1700000000108, "employees": ["Messias Neto"], "name": "Messias Neto", "date": "2026-04-21", "entries": [{"start": "07:20", "end": "11:50", "activity": "Montagem de painel", "client": "Klabin"}, {"start": "12:50", "end": "16:00", "activity": "Montagem de painel", "client": "Klabin"}]}, {"id": 1700000000109, "employees": ["Philipe Henrique"], "name": "Philipe Henrique", "date": "2026-04-21", "entries": [{"start": "08:00", "end": "12:00", "activity": "Visita em Campo", "client": "Corteva"}, {"start": "13:00", "end": "17:00", "activity": "Ajustes no projeto de instalação em campo", "client": "Corteva"}]}, {"id": 1700000000110, "employees": ["Denis Almeida"], "name": "Denis Almeida", "date": "2026-04-22", "entries": [{"start": "07:10", "end": "08:40", "activity": "Montagem de painel", "client": "Agrivale"}, {"start": "08:55", "end": "11:50", "activity": "Pré montagem caixa de passagem", "client": "Corteva"}, {"start": "13:00", "end": "16:40", "activity": "Montagem de painel", "client": "Agrivale"}]}, {"id": 1700000000111, "employees": ["Donizete"], "name": "Donizete", "date": "2026-04-22", "entries": [{"start": "07:25", "end": "09:00", "activity": "Desenvolvimento sistema infra elétrica", "client": "Corteva"}, {"start": "09:00", "end": "10:00", "activity": "Separação material para o Claudio soldar infra", "client": "Corteva"}, {"start": "10:25", "end": "11:30", "activity": "Show room quiosque", "client": "Interno"}, {"start": "13:00", "end": "16:45", "activity": "Preparado caixa passagem", "client": "Corteva"}]}, {"id": 1700000000112, "employees": ["Erik Emanuel"], "name": "Erik Emanuel", "date": "2026-04-22", "entries": [{"start": "07:24", "end": "08:06", "activity": "Verificação de email", "client": "Interno"}, {"start": "08:07", "end": "10:24", "activity": "Solicitação de compra", "client": "Interno"}, {"start": "10:25", "end": "11:13", "activity": "Etiqueta", "client": "Corteva"}, {"start": "11:14", "end": "12:00", "activity": "Etiqueta", "client": "Klabin"}, {"start": "13:02", "end": "13:36", "activity": "Etiqueta", "client": "Klabin"}, {"start": "13:37", "end": "15:35", "activity": "Etiqueta", "client": "Corteva"}]}, {"id": 1700000000113, "employees": ["Fabio Pereira"], "name": "Fabio Pereira", "date": "2026-04-22", "entries": [{"start": "07:30", "end": "11:50", "activity": "Montagem de painel", "client": "Corteva"}, {"start": "13:00", "end": "14:30", "activity": "Reunião", "client": "Interno"}]}, {"id": 1700000000114, "employees": ["Jeferson"], "name": "Jeferson", "date": "2026-04-22", "entries": [{"start": "07:15", "end": "11:45", "activity": "Instalação de sensores via rádio", "client": "CTC"}, {"start": "12:38", "end": "16:50", "activity": "Instalação de sensores via rádio", "client": "CTC"}]}, {"id": 1700000000115, "employees": ["Mateus Oliveira"], "name": "Mateus Oliveira", "date": "2026-04-22", "entries": [{"start": "07:15", "end": "11:45", "activity": "Instalação de sensores via rádio", "client": "CTC"}, {"start": "12:38", "end": "16:50", "activity": "Instalação de sensores via rádio", "client": "CTC"}]}, {"id": 1700000000116, "employees": ["Messias Neto"], "name": "Messias Neto", "date": "2026-04-22", "entries": [{"start": "07:20", "end": "11:50", "activity": "Montagem de painel", "client": "Klabin"}, {"start": "12:50", "end": "16:40", "activity": "Montagem de painel", "client": "Klabin"}]}, {"id": 1700000000117, "employees": ["Natan Vitor"], "name": "Natan Vitor", "date": "2026-04-22", "entries": [{"start": "07:15", "end": "07:30", "activity": "Checagem de mensagens do WhatsApp/Emails", "client": "Interno"}, {"start": "07:40", "end": "12:05", "activity": "Programação La vita", "client": "La Vita"}, {"start": "13:05", "end": "17:00", "activity": "Programação La vita", "client": "La Vita"}]}, {"id": 1700000000118, "employees": ["Philipe Henrique"], "name": "Philipe Henrique", "date": "2026-04-22", "entries": [{"start": "08:00", "end": "12:00", "activity": "Ajustes no projeto", "client": "Corteva"}, {"start": "13:00", "end": "15:00", "activity": "Ajustes no projeto/consulta de peças", "client": "Corteva"}]}, {"id": 1700000000119, "employees": ["Denis Almeida"], "name": "Denis Almeida", "date": "2026-04-23", "entries": [{"start": "07:30", "end": "11:50", "activity": "Montagem de painel", "client": "Agrivale"}, {"start": "13:00", "end": "16:43", "activity": "Montagem de painel", "client": "Agrivale"}]}, {"id": 1700000000120, "employees": ["Donizete"], "name": "Donizete", "date": "2026-04-23", "entries": [{"start": "07:20", "end": "10:20", "activity": "Furação caixas de passagem", "client": "Corteva"}, {"start": "10:45", "end": "11:30", "activity": "Quiosque climatizador", "client": "Interno"}, {"start": "13:00", "end": "16:30", "activity": "Quiosque climatizador e ferti irrigação show room", "client": "Interno"}]}, {"id": 1700000000121, "employees": ["Fabio Pereira"], "name": "Fabio Pereira", "date": "2026-04-23", "entries": [{"start": "07:30", "end": "08:30", "activity": "Reunião", "client": "Interno"}, {"start": "08:30", "end": "11:40", "activity": "Montagem de painel", "client": "Corteva"}, {"start": "13:00", "end": "16:00", "activity": "Montagem de painel", "client": "Corteva"}, {"start": "16:00", "end": "16:40", "activity": "Serviço", "client": "Interno"}]}, {"id": 1700000000122, "employees": ["Jeferson"], "name": "Jeferson", "date": "2026-04-23", "entries": [{"start": "07:15", "end": "11:41", "activity": "Instalação de sensores via rádio", "client": "CTC"}, {"start": "12:35", "end": "15:15", "activity": "Instalação de sensores via rádio", "client": "CTC"}, {"start": "15:15", "end": "16:50", "activity": "Organização de materiais e alinhamentos com Ricardo", "client": "Interno"}]}, {"id": 1700000000123, "employees": ["Mateus Oliveira"], "name": "Mateus Oliveira", "date": "2026-04-23", "entries": [{"start": "07:15", "end": "11:41", "activity": "Instalação de sensores via rádio", "client": "CTC"}, {"start": "12:35", "end": "15:15", "activity": "Instalação de sensores via rádio", "client": "CTC"}, {"start": "15:15", "end": "16:50", "activity": "Organização de materiais e alinhamentos com Ricardo", "client": "Interno"}]}, {"id": 1700000000124, "employees": ["Messias Neto"], "name": "Messias Neto", "date": "2026-04-23", "entries": [{"start": "07:20", "end": "11:50", "activity": "Montagem de painel", "client": "Klabin"}, {"start": "12:50", "end": "16:40", "activity": "Montagem de painel", "client": "Klabin"}]}, {"id": 1700000000125, "employees": ["Philipe Henrique"], "name": "Philipe Henrique", "date": "2026-04-23", "entries": [{"start": "08:00", "end": "09:00", "activity": "Ajustes no projeto", "client": "Klabin"}, {"start": "13:00", "end": "13:15", "activity": "Dimensionamento elétrico (3/5)", "client": "CIA NITRO"}, {"start": "13:30", "end": "17:00", "activity": "Diagrama unifilar/multifilar (3/5)", "client": "CIA NITRO"}]}];
+
+// ════════════════════════════════════════
+// CONFIG
+// ════════════════════════════════════════
+const CFG_KEY = 'tl_cfg_v2';
+const LS_CACHE = 'tl_cache_v2';
+const INTERNAL_KW = ['interno','interna','administrativ','reunião interna','adm'];
+
+function getCfg(){ try{ return JSON.parse(localStorage.getItem(CFG_KEY)||'{}'); }catch{ return {}; } }
+function saveCfg(o){ localStorage.setItem(CFG_KEY, JSON.stringify({...getCfg(),...o})); }
+function getCache(){ try{ return JSON.parse(localStorage.getItem(LS_CACHE)||'[]'); }catch{ return []; } }
+function saveCache(d){ localStorage.setItem(LS_CACHE, JSON.stringify(d)); }
+
+let reportUnlocked = false;
+let entryCount = 0;
+let selectedKeys = new Set();
+let colabs = [];
+
+// ════════════════════════════════════════
+// JSONBIN API
+// ════════════════════════════════════════
+const BIN_BASE = 'https://api.jsonbin.io/v3/b';
+
+async function binGet() {
+  const { binId, apiKey } = getCfg();
+  if (!binId || !apiKey) return getCache();
+  try {
+    const r = await fetch(`${BIN_BASE}/${binId}/latest`, {
+      headers: { 'X-Master-Key': apiKey }
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    const records = data.record?.records || [];
+    saveCache(records);
+    return records;
+  } catch(e) {
+    setSyncStatus('err', 'Sem conexão');
+    return getCache();
+  }
+}
+
+async function binPut(records) {
+  const { binId, apiKey } = getCfg();
+  if (!binId || !apiKey) { saveCache(records); return; }
+  const r = await fetch(`${BIN_BASE}/${binId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', 'X-Master-Key': apiKey },
+    body: JSON.stringify({ records })
+  });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  saveCache(records);
+}
+
+async function createBin() {
+  const apiKey = document.getElementById('cfg-apikey').value.trim();
+  const res = document.getElementById('bin-result');
+  if (!apiKey) { res.style.color='var(--accent)'; res.textContent='⚠ Cole sua Master Key primeiro.'; return; }
+  res.style.color='var(--amber)'; res.textContent='⏳ Criando banco de dados...';
+  try {
+    const r = await fetch(BIN_BASE, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Master-Key': apiKey, 'X-Bin-Name': 'timelog', 'X-Bin-Private': 'true' },
+      body: JSON.stringify({ records: [] })
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    const binId = data.metadata?.id;
+    document.getElementById('cfg-binid').value = binId;
+    res.style.color='var(--green)'; res.textContent=`✓ Banco criado! ID: ${binId}`;
+  } catch(e) {
+    res.style.color='var(--accent)'; res.textContent='✕ Erro: verifique a Master Key e tente novamente.';
+  }
+}
+
+function saveSetup() {
+  const apiKey = document.getElementById('cfg-apikey').value.trim();
+  const binId  = document.getElementById('cfg-binid').value.trim();
+  const pass   = document.getElementById('cfg-pass').value.trim();
+  const res    = document.getElementById('save-result');
+  if (!apiKey){ res.style.color='var(--accent)'; res.textContent='⚠ Master Key é obrigatória.'; return; }
+  if (!binId) { res.style.color='var(--accent)'; res.textContent='⚠ Crie ou informe o Bin ID.'; return; }
+  if (!pass || pass.length < 4){ res.style.color='var(--accent)'; res.textContent='⚠ Senha deve ter ao menos 4 caracteres.'; return; }
+  saveCfg({ apiKey, binId, password: pass });
+  res.style.color='var(--green)'; res.textContent='✓ Configuração salva!';
+  document.getElementById('setup-banner').classList.add('hidden');
+  setSyncStatus('ok','Configurado');
+  setTimeout(closeSetup, 1200);
+}
+
+// ════════════════════════════════════════
+// SYNC STATUS
+// ════════════════════════════════════════
+function setSyncStatus(state, txt) {
+  const p = document.getElementById('sync-pill');
+  const t = document.getElementById('sync-txt');
+  p.className = 'sync-pill ' + state;
+  t.textContent = txt;
+}
+
+async function checkSync() {
+  const cfg = getCfg();
+  if (!cfg.binId || !cfg.apiKey) {
+    setSyncStatus('err', 'Local apenas');
+    document.getElementById('setup-banner').classList.remove('hidden');
+    return;
+  }
+  setSyncStatus('loading', 'Conectando...');
+  try {
+    await binGet();
+    setSyncStatus('ok', 'Online ✓');
+  } catch {
+    setSyncStatus('err', 'Sem conexão');
+  }
+}
+
+// ════════════════════════════════════════
+// SETUP MODAL
+// ════════════════════════════════════════
+function openSetup() {
+  const cfg = getCfg();
+  if (cfg.apiKey) document.getElementById('cfg-apikey').value = cfg.apiKey;
+  if (cfg.binId)  document.getElementById('cfg-binid').value  = cfg.binId;
+  if (cfg.password) document.getElementById('cfg-pass').value = cfg.password;
+  document.getElementById('setup-modal').classList.add('open');
+}
+function closeSetup(){ document.getElementById('setup-modal').classList.remove('open'); }
+
+// ════════════════════════════════════════
+// LOCK
+// ════════════════════════════════════════
+function unlock() {
+  const cfg = getCfg();
+  const pw = cfg.password || 'admin123';
+  if (document.getElementById('lock-inp').value === pw) {
+    reportUnlocked = true;
+    document.getElementById('lock-screen').style.display = 'none';
+    showPage('report', document.getElementById('tab-report'));
+  } else {
+    const inp = document.getElementById('lock-inp');
+    inp.classList.add('shake');
+    setTimeout(()=>inp.classList.remove('shake'), 500);
+    inp.value = ''; inp.focus();
+  }
+}
+
+// ════════════════════════════════════════
+// NAV
+// ════════════════════════════════════════
+function showPage(page, btn) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (page === 'report') renderReport();
+}
+function checkReport(btn) {
+  if (reportUnlocked) showPage('report', btn);
+  else { document.getElementById('lock-screen').style.display='flex'; document.getElementById('lock-inp').focus(); }
+}
+
+// ════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════
+const t2m = t => { if(!t) return 0; const [h,m]=t.split(':').map(Number); return h*60+m; };
+function fmtH(min){ if(min===0)return'0h'; const h=Math.floor(min/60),m=min%60; return m>0?`${h}h${String(m).padStart(2,'0')}`:`${h}h`; }
+const isInt = cli => INTERNAL_KW.some(k=>(cli||'').toLowerCase().includes(k));
+function fmtD(d){ if(!d)return''; const[y,m,day]=d.split('-'); return`${day}/${m}/${y}`; }
+function esc(s){ return(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+function getKnownNames(){ return [...new Set(getCache().flatMap(r=>r.employees||[r.name||'']).filter(Boolean))].sort(); }
+function getKnownClients(){ return [...new Set(getCache().flatMap(r=>r.entries.map(e=>e.client)).filter(Boolean))].sort(); }
+
+// ════════════════════════════════════════
+// CHIPS (colaboradores)
+// ════════════════════════════════════════
+function renderChips() {
+  const wrap = document.getElementById('chips-wrap');
+  wrap.querySelectorAll('.chip').forEach(c=>c.remove());
+  colabs.forEach((name,i)=>{
+    const chip = document.createElement('div');
+    chip.className = 'chip';
+    chip.innerHTML = `${esc(name)}<button onclick="removeColab(${i})" title="Remover">✕</button>`;
+    wrap.insertBefore(chip, document.getElementById('chip-inp'));
+  });
+}
+function removeColab(i){ colabs.splice(i,1); renderChips(); }
+function addColab(name){
+  name = name.trim();
+  if (!name || colabs.includes(name)) return;
+  colabs.push(name);
+  renderChips();
+  document.getElementById('chip-inp').value = '';
+  document.getElementById('chip-ac').classList.remove('open');
+}
+
+function setupChipAC() {
+  const inp = document.getElementById('chip-inp');
+  const lst = document.getElementById('chip-ac');
+  let hi = -1;
+  inp.addEventListener('keydown', e => {
+    if (e.key==='Enter'||e.key===',') {
+      e.preventDefault();
+      const items = lst.querySelectorAll('.ac-item');
+      if (hi>=0&&items[hi]) addColab(items[hi].dataset.val);
+      else addColab(inp.value);
+      hi = -1;
+    } else if (e.key==='Backspace'&&!inp.value&&colabs.length) {
+      colabs.pop(); renderChips();
+    } else if (e.key==='ArrowDown') {
+      e.preventDefault();
+      const items=lst.querySelectorAll('.ac-item');
+      hi=Math.min(hi+1,items.length-1);
+      items.forEach((el,i)=>el.classList.toggle('hi',i===hi));
+    } else if (e.key==='ArrowUp') {
+      e.preventDefault();
+      const items=lst.querySelectorAll('.ac-item');
+      hi=Math.max(hi-1,0);
+      items.forEach((el,i)=>el.classList.toggle('hi',i===hi));
+    } else if (e.key==='Escape') lst.classList.remove('open');
+  });
+  inp.addEventListener('input', () => {
+    const v = inp.value.trim().toLowerCase();
+    const opts = getKnownNames().filter(o=>v&&o.toLowerCase().includes(v)&&!colabs.includes(o));
+    if (!opts.length){ lst.classList.remove('open'); return; }
+    lst.innerHTML = opts.slice(0,6).map(o=>`<div class="ac-item" data-val="${esc(o)}">${o}</div>`).join('');
+    lst.classList.add('open');
+    lst.querySelectorAll('.ac-item').forEach(el=>{
+      el.addEventListener('mousedown',ev=>ev.preventDefault());
+      el.addEventListener('click',()=>addColab(el.dataset.val));
+    });
+    hi = -1;
+  });
+  inp.addEventListener('blur',()=>setTimeout(()=>lst.classList.remove('open'),180));
+}
+
+// ════════════════════════════════════════
+// GENERIC AUTOCOMPLETE
+// ════════════════════════════════════════
+function makeAC(input, listEl, getFn) {
+  let hi = -1;
+  input.addEventListener('input', () => {
+    const v = input.value.trim().toLowerCase();
+    const opts = getFn().filter(o=>v&&o.toLowerCase().includes(v)&&o.toLowerCase()!==v);
+    if (!opts.length){ listEl.classList.remove('open'); return; }
+    listEl.innerHTML = opts.slice(0,8).map(o=>`<div class="ac-item" data-val="${esc(o)}">${o}</div>`).join('');
+    listEl.classList.add('open');
+    listEl.querySelectorAll('.ac-item').forEach(el=>{
+      el.addEventListener('mousedown',ev=>ev.preventDefault());
+      el.addEventListener('click',()=>{ input.value=el.dataset.val; listEl.classList.remove('open'); });
+    });
+    hi = -1;
+  });
+  input.addEventListener('keydown', e=>{
+    const items=listEl.querySelectorAll('.ac-item');
+    if (!items.length) return;
+    if(e.key==='ArrowDown'){e.preventDefault();hi=Math.min(hi+1,items.length-1);items.forEach((el,i)=>el.classList.toggle('hi',i===hi));}
+    else if(e.key==='ArrowUp'){e.preventDefault();hi=Math.max(hi-1,0);items.forEach((el,i)=>el.classList.toggle('hi',i===hi));}
+    else if(e.key==='Enter'&&hi>=0){e.preventDefault();input.value=items[hi].dataset.val;listEl.classList.remove('open');}
+    else if(e.key==='Escape') listEl.classList.remove('open');
+  });
+  input.addEventListener('blur',()=>setTimeout(()=>listEl.classList.remove('open'),180));
+}
+
+// ════════════════════════════════════════
+// FORM ENTRIES
+// ════════════════════════════════════════
+function addEntry(s='',e='',act='',cli='') {
+  entryCount++;
+  const id='fe'+entryCount, acId='fac'+entryCount;
+  const div = document.createElement('div');
+  div.className='entry-row'; div.id=id;
+  div.innerHTML=`
+    <input type="time" class="e-start" value="${s}">
+    <input type="time" class="e-end"   value="${e}">
+    <input type="text" class="e-activity" placeholder="Descreva a atividade..." value="${esc(act)}">
+    <div class="ac-wrap hcli">
+      <input type="text" class="e-client" placeholder="Ex: Cliente X ou Interno" value="${esc(cli)}">
+      <div class="ac-list" id="${acId}"></div>
+    </div>
+    <button class="btn-rm" onclick="rmEntry('${id}')" title="Remover">✕</button>`;
+  document.getElementById('entries-container').appendChild(div);
+  makeAC(div.querySelector('.e-client'), div.querySelector('.ac-list'), getKnownClients);
+}
+function rmEntry(id){ const el=document.getElementById(id); if(el) el.remove(); }
+function getFormEntries(){
+  return Array.from(document.querySelectorAll('#entries-container .entry-row')).map(r=>({
+    start:    r.querySelector('.e-start').value,
+    end:      r.querySelector('.e-end').value,
+    activity: r.querySelector('.e-activity').value.trim(),
+    client:   r.querySelector('.e-client').value.trim(),
+  })).filter(e=>e.start&&e.end&&e.activity);
+}
+
+// ════════════════════════════════════════
+// SAVE RECORD
+// ════════════════════════════════════════
+async function saveRecord() {
+  if (!colabs.length){ toast('⚠ Adicione pelo menos um colaborador.'); return; }
+  const date    = document.getElementById('func-date').value;
+  const entries = getFormEntries();
+  if (!date)         { toast('⚠ Informe a data.'); return; }
+  if (!entries.length){ toast('⚠ Adicione ao menos uma atividade.'); return; }
+
+  const btn = document.getElementById('btn-submit');
+  btn.disabled=true; btn.textContent='Enviando...';
+  setSyncStatus('loading','Salvando...');
+
+  try {
+    const records = await binGet();
+    const record = { id: Date.now(), employees: [...colabs], name: colabs[0], date, entries };
+    records.push(record);
+    await binPut(records);
+    setSyncStatus('ok','Online ✓');
+    toast('✓ Registro enviado!','ok');
+    colabs=[]; renderChips();
+    document.getElementById('entries-container').innerHTML='';
+    entryCount=0; addEntry();
+  } catch(e) {
+    setSyncStatus('err','Erro ao salvar');
+    toast('⚠ Erro ao salvar. Verifique a conexão.');
+  }
+  btn.disabled=false; btn.textContent='✓ Enviar registro';
+}
+
+// ════════════════════════════════════════
+// REPORT
+// ════════════════════════════════════════
+async function renderReport() {
+  setSyncStatus('loading','Carregando...');
+  let data;
+  try {
+    data = await binGet();
+    setSyncStatus('ok','Online ✓');
+  } catch {
+    data = getCache();
+    setSyncStatus('err','Dados locais');
+  }
+
+  const from = document.getElementById('f-from').value;
+  const to   = document.getElementById('f-to').value;
+  const emp  = document.getElementById('f-emp').value;
+
+  const empSel = document.getElementById('f-emp');
+  const cur = empSel.value;
+  const emps = [...new Set(data.flatMap(r=>r.employees||[r.name||'']).filter(Boolean))].sort();
+  empSel.innerHTML = '<option value="">Todos os colaboradores</option>' +
+    emps.map(e=>`<option value="${esc(e)}"${e===cur?' selected':''}>${e}</option>`).join('');
+
+  const all = [];
+  data.forEach(r => {
+    const employees = r.employees||[r.name||''];
+    if (emp && !employees.includes(emp)) return;
+    if (from && r.date < from) return;
+    if (to   && r.date > to)   return;
+    r.entries.forEach((e,idx) => {
+      const dur = t2m(e.end) - t2m(e.start);
+      if (dur > 0) all.push({...e, dur, employees, date:r.date, recId:r.id, entryIdx:idx, key:`${r.id}|${idx}`});
+    });
+  });
+
+  const unique = [...new Map(all.map(e=>[e.key,e])).values()];
+  const total  = unique.reduce((s,e)=>s+e.dur,0);
+  const intMin = unique.filter(e=>isInt(e.client)).reduce((s,e)=>s+e.dur,0);
+  const cliMin = total - intMin;
+  const recCnt = new Set(all.map(e=>e.recId)).size;
+
+  document.getElementById('s-total').textContent = fmtH(total);
+  document.getElementById('s-recs').textContent  = recCnt+' registro'+(recCnt!==1?'s':'');
+  document.getElementById('s-cli').textContent   = fmtH(cliMin);
+  document.getElementById('s-clip').textContent  = total?Math.round(cliMin/total*100)+'% do total':'—';
+  document.getElementById('s-int').textContent   = fmtH(intMin);
+  document.getElementById('s-intp').textContent  = total?Math.round(intMin/total*100)+'% do total':'—';
+
+  const byCli={}, byEmp={};
+  unique.forEach(e=>{ const c=e.client||'(sem cliente)'; byCli[c]=(byCli[c]||0)+e.dur; });
+  all.forEach(e=>e.employees.forEach(em=>{ if(!emp||emp===em) byEmp[em]=(byEmp[em]||0)+e.dur; }));
+
+  const COLORS=['#c84b2f','#2f6bc8','#2a9d63','#c8832f','#8b2fc8','#2fc8b8','#c8c02f','#c82f7a','#2fc87a','#c82fc8'];
+  renderBars('chart-cli',byCli,COLORS);
+  renderBars('chart-emp',byEmp,COLORS);
+  renderTable(all);
+}
+
+function renderBars(id,data,colors){
+  const el=document.getElementById(id);
+  const sorted=Object.entries(data).sort((a,b)=>b[1]-a[1]);
+  if(!sorted.length){el.innerHTML='<div style="color:var(--ink2);font-size:.82rem;text-align:center;padding:16px">Sem dados</div>';return;}
+  const max=sorted[0][1];
+  el.innerHTML=sorted.map(([lbl,min],i)=>`<div class="bar-row"><div class="bar-lbl" title="${lbl}">${lbl}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round(min/max*100)}%;background:${colors[i%colors.length]}"></div></div><div class="bar-time">${fmtH(min)}</div></div>`).join('');
+}
+
+function renderTable(all){
+  const el=document.getElementById('table-container');
+  if(!all.length){el.innerHTML='<div class="empty"><div class="ico">📭</div><p>Nenhum registro encontrado.</p></div>';return;}
+  const sorted=[...all].sort((a,b)=>(a.date+a.start)<(b.date+b.start)?1:-1);
+  el.innerHTML=`<table><thead><tr>
+    <th><input type="checkbox" id="chk-all" onchange="toggleAll(this.checked)"></th>
+    <th>Data</th><th>Colaborador(es)</th><th>Início</th><th>Fim</th><th>Duração</th><th>Atividade</th><th>Cliente/Setor</th>
+  </tr></thead><tbody>${sorted.map(e=>{
+    const sel=selectedKeys.has(e.key);
+    const chips=e.employees.map(n=>`<span class="ctag">${n}</span>`).join(' ');
+    return`<tr class="${sel?'sel':''}" data-key="${e.key}">
+      <td><input type="checkbox" class="row-chk" data-key="${e.key}" ${sel?'checked':''} onchange="toggleRow(this)"></td>
+      <td class="mono">${fmtD(e.date)}</td>
+      <td><div class="chips-cell">${chips}</div></td>
+      <td class="mono">${e.start}</td><td class="mono">${e.end}</td>
+      <td class="mono">${fmtH(e.dur)}</td>
+      <td>${e.activity}</td>
+      <td><span class="badge ${isInt(e.client)?'badge-int':'badge-cli'}">${e.client||'—'}</span></td>
+    </tr>`;
+  }).join('')}</tbody></table>`;
+  syncChkAll();
+}
+
+// ════════════════════════════════════════
+// SELECTION
+// ════════════════════════════════════════
+function toggleRow(chk){
+  const key=chk.dataset.key, tr=chk.closest('tr');
+  if(chk.checked){selectedKeys.add(key);tr.classList.add('sel');}
+  else{selectedKeys.delete(key);tr.classList.remove('sel');}
+  syncChkAll(); updateFAB();
+}
+function toggleAll(checked){
+  document.querySelectorAll('.row-chk').forEach(chk=>{
+    chk.checked=checked; const tr=chk.closest('tr');
+    if(checked){selectedKeys.add(chk.dataset.key);tr.classList.add('sel');}
+    else{selectedKeys.delete(chk.dataset.key);tr.classList.remove('sel');}
+  });
+  updateFAB();
+}
+function syncChkAll(){
+  const all=document.querySelectorAll('.row-chk'), chkd=document.querySelectorAll('.row-chk:checked');
+  const ca=document.getElementById('chk-all'); if(!ca)return;
+  ca.indeterminate=chkd.length>0&&chkd.length<all.length;
+  ca.checked=all.length>0&&chkd.length===all.length;
+}
+function clearSel(){
+  selectedKeys.clear();
+  document.querySelectorAll('.row-chk').forEach(c=>{c.checked=false;c.closest('tr').classList.remove('sel');});
+  const ca=document.getElementById('chk-all'); if(ca){ca.checked=false;ca.indeterminate=false;}
+  updateFAB();
+}
+function updateFAB(){
+  const n=selectedKeys.size;
+  document.getElementById('fab-n').textContent=n+' selecionado'+(n!==1?'s':'');
+  document.getElementById('fab').classList.toggle('on',n>0);
+  const lbl=document.getElementById('sel-lbl');
+  if(n>0){lbl.textContent=n+' selecionado'+(n!==1?'s':'');lbl.classList.add('on');}
+  else lbl.classList.remove('on');
+}
+
+// ════════════════════════════════════════
+// DELETE SELECTED
+// ════════════════════════════════════════
+async function deleteSelected(){
+  const n=selectedKeys.size; if(!n)return;
+  if(!confirm(`Excluir ${n} linha${n!==1?'s':''} selecionada${n!==1?'s':''}?`))return;
+
+  const toDelete=new Map();
+  selectedKeys.forEach(key=>{
+    const[rid,idx]=key.split('|');
+    if(!toDelete.has(+rid)) toDelete.set(+rid,new Set());
+    toDelete.get(+rid).add(+idx);
+  });
+
+  setSyncStatus('loading','Excluindo...');
+  try {
+    const data=getCache();
+    const updated=[];
+    data.forEach(r=>{
+      if(!toDelete.has(r.id)){updated.push(r);return;}
+      const remaining=r.entries.filter((_,i)=>!toDelete.get(r.id).has(i));
+      if(remaining.length>0) updated.push({...r,entries:remaining});
+    });
+    await binPut(updated);
+    selectedKeys.clear();
+    setSyncStatus('ok','Online ✓');
+    toast(`✓ ${n} linha${n!==1?'s':''} excluída${n!==1?'s':''}!`,'ok');
+    renderReport();
+  } catch {
+    setSyncStatus('err','Erro');
+    toast('⚠ Erro ao excluir.');
+  }
+}
+
+// ════════════════════════════════════════
+// EDIT SELECTED
+// ════════════════════════════════════════
+function editSelected(){
+  if(!selectedKeys.size)return;
+  const data=getCache();
+  const recMap=new Map();
+  selectedKeys.forEach(key=>{
+    const[rid,idx]=key.split('|');
+    if(!recMap.has(+rid)) recMap.set(+rid,[]);
+    recMap.get(+rid).push(+idx);
+  });
+  let html='';
+  recMap.forEach((idxList,rid)=>{
+    const rec=data.find(r=>r.id===rid); if(!rec)return;
+    const empNames=(rec.employees||[rec.name||'']).join(', ');
+    html+=`<div class="rec-block" data-rid="${rid}">
+      <div class="rec-hdr"><span class="rec-who">${empNames}</span><span class="rec-date">${fmtD(rec.date)}</span></div>`;
+    idxList.sort((a,b)=>a-b).forEach(idx=>{
+      const e=rec.entries[idx]; if(!e)return;
+      html+=`<div style="padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--border)">
+        <div style="font-size:.68rem;color:var(--ink2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;font-weight:600">Linha ${idx+1}</div>
+        <div class="rec-egrid">
+          <div><label>Início</label><input type="time" class="re-s" data-rid="${rid}" data-idx="${idx}" value="${e.start}"></div>
+          <div><label>Fim</label><input type="time" class="re-e" data-rid="${rid}" data-idx="${idx}" value="${e.end}"></div>
+          <div><label>Atividade</label><input type="text" class="re-a" data-rid="${rid}" data-idx="${idx}" value="${esc(e.activity)}"></div>
+          <div><label>Cliente/Setor</label><input type="text" class="re-c" data-rid="${rid}" data-idx="${idx}" value="${esc(e.client||'')}"></div>
+        </div></div>`;
+    });
+    html+='</div>';
+  });
+  const tot=selectedKeys.size;
+  document.getElementById('edit-modal-sub').textContent=`Editando ${tot} linha${tot!==1?'s':''} de ${recMap.size} registro${recMap.size!==1?'s':''}`;
+  document.getElementById('edit-modal-content').innerHTML=html;
+  document.getElementById('edit-modal').classList.add('open');
+}
+
+async function saveEditedRecords(){
+  const data=getCache();
+  const updated=new Set();
+  const read=(cls,field)=>document.querySelectorAll('.'+cls).forEach(inp=>{
+    const rid=+inp.dataset.rid, idx=+inp.dataset.idx;
+    const rec=data.find(r=>r.id===rid); if(!rec||!rec.entries[idx])return;
+    rec.entries[idx][field]=inp.value.trim?inp.value.trim():inp.value;
+    updated.add(rid);
+  });
+  read('re-s','start'); read('re-e','end'); read('re-a','activity'); read('re-c','client');
+  setSyncStatus('loading','Salvando...');
+  try {
+    await binPut(data);
+    closeEditModal(); clearSel();
+    setSyncStatus('ok','Online ✓');
+    toast('✓ Registros atualizados!','ok');
+    renderReport();
+  } catch {
+    setSyncStatus('err','Erro');
+    toast('⚠ Erro ao salvar.');
+  }
+}
+function closeEditModal(){ document.getElementById('edit-modal').classList.remove('open'); }
+
+// ════════════════════════════════════════
+// RENAME EDITOR
+// ════════════════════════════════════════
+function safeKey(s){ return btoa(encodeURIComponent(s||'')).replace(/[=+/]/g,'_'); }
+
+function openEditor(){
+  const data=getCache();
+  const clients=[...new Set(data.flatMap(r=>r.entries.map(e=>e.client)).filter(Boolean))].sort();
+  const names=[...new Set(data.flatMap(r=>r.employees||[r.name||'']).filter(Boolean))].sort();
+  let html='<div class="ed-sec"><h5>Clientes / Setores</h5>';
+  if(!clients.length) html+='<div class="no-data">Nenhum cliente registrado.</div>';
+  clients.forEach(c=>{
+    const k=safeKey(c), cnt=data.flatMap(r=>r.entries).filter(e=>e.client===c).length;
+    html+=`<div class="ed-row"><input type="text" id="oc-${k}" value="${esc(c)}" readonly style="color:var(--ink2);background:var(--surface2)"><input type="text" id="nc-${k}" value="${esc(c)}"><button class="btn-apply" onclick="applyReplace('client','${k}')">Aplicar</button></div><div class="ed-cnt">${cnt} ocorrência${cnt!==1?'s':''}</div>`;
+  });
+  html+='</div><div class="ed-sec"><h5>Colaboradores</h5>';
+  if(!names.length) html+='<div class="no-data">Nenhum colaborador registrado.</div>';
+  names.forEach(n=>{
+    const k=safeKey(n), cnt=data.filter(r=>(r.employees||[r.name]).includes(n)).length;
+    html+=`<div class="ed-row"><input type="text" id="oe-${k}" value="${esc(n)}" readonly style="color:var(--ink2);background:var(--surface2)"><input type="text" id="ne-${k}" value="${esc(n)}"><button class="btn-apply" onclick="applyReplace('employee','${k}')">Aplicar</button></div><div class="ed-cnt">${cnt} registro${cnt!==1?'s':''}</div>`;
+  });
+  html+='</div>';
+  document.getElementById('editor-content').innerHTML=html;
+  document.getElementById('editor-modal').classList.add('open');
+}
+
+async function applyReplace(field,k){
+  const pfx=field==='client'?'c':'e';
+  const oldEl=document.getElementById(`o${pfx}-${k}`), newEl=document.getElementById(`n${pfx}-${k}`);
+  const oldVal=oldEl?oldEl.value:'', newVal=newEl?newEl.value.trim():'';
+  if(!newVal){toast('⚠ O novo nome não pode ser vazio.');return;}
+  if(newVal===oldVal){toast('⚠ O nome é igual ao atual.');return;}
+  setSyncStatus('loading','Salvando...');
+  try {
+    const data=getCache();
+    data.forEach(r=>{
+      if(field==='employee') r.employees=(r.employees||[r.name||'']).map(n=>n===oldVal?newVal:n);
+      if(field==='client') r.entries.forEach(e=>{ if(e.client===oldVal) e.client=newVal; });
+    });
+    await binPut(data);
+    setSyncStatus('ok','Online ✓');
+    toast('✓ Substituído com sucesso!','ok');
+    openEditor(); renderReport();
+  } catch { setSyncStatus('err','Erro'); toast('⚠ Erro ao salvar.'); }
+}
+function closeEditor(){ document.getElementById('editor-modal').classList.remove('open'); }
+
+// ════════════════════════════════════════
+// EXPORT CSV
+// ════════════════════════════════════════
+async function exportCSV(){
+  const data=await binGet();
+  if(!data.length){toast('⚠ Nenhum dado para exportar.');return;}
+  const rows=[['Data','Colaborador','Início','Fim','Duração (min)','Atividade','Cliente/Setor']];
+  data.forEach(r=>{
+    const employees=r.employees||[r.name||''];
+    r.entries.forEach(e=>{
+      const dur=t2m(e.end)-t2m(e.start);
+      if(dur<=0)return;
+      employees.forEach(emp=>{
+        rows.push([r.date, emp, e.start, e.end, dur,
+          e.activity.includes(',')?`"${e.activity.replace(/"/g,'""')}"`:e.activity,
+          e.client||''
+        ]);
+      });
+    });
+  });
+  const csv=rows.map(r=>r.join(',')).join('\r\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+  Object.assign(document.createElement('a'),{href:URL.createObjectURL(blob),download:`timelog_${new Date().toISOString().slice(0,10)}.csv`}).click();
+  toast('✓ CSV exportado!','ok');
+}
+
+// ════════════════════════════════════════
+// CLEAR ALL
+// ════════════════════════════════════════
+async function clearAll(){
+  if(!confirm('Apagar TODOS os registros permanentemente?'))return;
+  setSyncStatus('loading','Limpando...');
+  try {
+    await binPut([]);
+    selectedKeys.clear();
+    setSyncStatus('ok','Online ✓');
+    renderReport();
+    toast('Dados apagados.','ok');
+  } catch { toast('⚠ Erro ao limpar.'); }
+}
+
+// ════════════════════════════════════════
+// IMPORT HISTORICAL DATA
+// ════════════════════════════════════════
+async function importHistoricalData(){
+  const btn=document.getElementById('btn-import');
+  btn.disabled=true; btn.textContent='Importando...';
+  setSyncStatus('loading','Importando...');
+  try {
+    const existing=await binGet();
+    const existingIds=new Set(existing.map(r=>r.id));
+    const toAdd=HISTORICAL.filter(r=>!existingIds.has(r.id));
+    if(!toAdd.length){
+      toast('Todos os registros históricos já foram importados.','ok');
+      btn.style.display='none'; return;
+    }
+    const merged=[...existing,...toAdd];
+    await binPut(merged);
+    setSyncStatus('ok','Online ✓');
+    toast(`✓ ${toAdd.length} registro(s) importado(s)!`,'ok');
+    btn.style.display='none';
+    renderReport();
+  } catch {
+    setSyncStatus('err','Erro');
+    toast('⚠ Erro ao importar. Tente novamente.');
+    btn.disabled=false; btn.textContent='📥 Importar histórico';
+  }
+}
+
+// ════════════════════════════════════════
+// TOAST
+// ════════════════════════════════════════
+function toast(msg,type='warn'){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.style.background=type==='ok'?'#2a9d63':'#c8832f';
+  t.classList.add('on'); setTimeout(()=>t.classList.remove('on'),3200);
+}
+
+// ════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════
+(function init(){
+  const today=new Date().toISOString().slice(0,10);
+  document.getElementById('func-date').value=today;
+  const from=new Date(); from.setDate(from.getDate()-30);
+  document.getElementById('f-from').value=from.toISOString().slice(0,10);
+  document.getElementById('f-to').value=today;
+  addEntry();
+  setupChipAC();
+  checkSync();
+
+  // Show import button if historical data not yet imported
+  const cache=getCache();
+  const hasHistorical=HISTORICAL.some(r=>cache.find(c=>c.id===r.id));
+  if(!hasHistorical){
+    const btn=document.getElementById('btn-import');
+    btn.style.display='flex';
+    btn.textContent=`📥 Importar histórico (${HISTORICAL.length} registros)`;
+  }
+})();
+</script>
+</body>
+</html>
